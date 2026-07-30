@@ -1,0 +1,214 @@
+{
+  "stores": {
+    "ge": {
+      "chicken": {
+        "whole_chicken": 3.99,
+        "cut_in_8": 4.49,
+        "drumsticks": 4.79,
+        "legs": 4.99,
+        "thighs": 5.49,
+        "cutlets": 8.99,
+        "thin_cutlets": 11.99,
+        "pargiyot": 9.99,
+        "wings": 3.99,
+        "ground_chicken": 8.99
+      },
+      "beef": {
+        "ground_beef": 9.99,
+        "extra_lean": 11.49,
+        "patties": 9.99,
+        "sliders": 12.49,
+        "stew": 16.49,
+        "london_broil": 19.99,
+        "rib_steak": 32.99,
+        "flanken": 10.99,
+        "brisket": 15.99
+      },
+      "dairy": {
+        "eggs": 2.19,
+        "milk": 0.79,
+        "butter": 2.89,
+        "cream_cheese": 3.89,
+        "cottage_cheese": 3.99,
+        "shredded_cheese": 2.79,
+        "sourcream": 1.89,
+        "yogurt": 0.79
+      },
+      "produce": {
+        "bananas": 1.19,
+        "apples": 2.29,
+        "potatoes": 0.99
+      },
+      "deli": {
+        "pastrami": 6.29,
+        "bologna": 6.09,
+        "hotdogs": 8.99,
+        "cornedbeef": 10.99
+      }
+    },
+    "gl": {
+      "chicken": {},
+      "beef": {},
+      "dairy": {},
+      "produce": {},
+      "deli": {}
+    },
+    "superstop": {
+      "chicken": {
+        "whole_chicken": 4.49,
+        "drumsticks": 4.99,
+        "legs": 3.99,
+        "thighs": 5.49,
+        "cutlets": 8.99,
+        "thin_cutlets": 10.49,
+        "wings": 3.99,
+        "ground_chicken": 9.49
+      },
+      "beef": {
+        "ground_beef": 16.49,
+        "sliders": 21.49,
+        "stew": 17.49,
+        "london_broil": 22.79,
+        "rib_steak": 37.79,
+        "flanken": 37.79,
+        "brisket": 21.49
+      },
+      "dairy": {
+        "milk": 1.49,
+        "butter": 6.09,
+        "cream_cheese": 3.29,
+        "cottage_cheese": 3.25,
+        "american_cheese": 5.29,
+        "shredded_cheese": 4.79,
+        "sourcream": 4.09,
+        "yogurt": 0.75
+      },
+      "produce": {
+        "bananas": 0.89,
+        "apples": 2.19,
+        "potatoes": 1.09
+      },
+      "deli": {
+        "pastrami": 8.99,
+        "bologna": 8.49,
+        "hotdogs": 6.99,
+        "cornedbeef": 9.49
+      }
+    },
+    "seasons_law": {
+      "chicken": {
+        "whole_chicken": 3.79,
+        "cut_in_8": 3.99,
+        "drumsticks": 3.19,
+        "legs": 3.49,
+        "thighs": 2.99,
+        "cutlets": 7.99,
+        "thin_cutlets": 9.49,
+        "pargiyot": 9.49,
+        "wings": 1.99,
+        "ground_chicken": 4.99
+      },
+      "beef": {
+        "ground_beef": 10.99,
+        "extra_lean": 14.99,
+        "patties": 14.99,
+        "stew": 7.99,
+        "london_broil": 18.49,
+        "rib_steak": 33.99,
+        "flanken": 19.99,
+        "brisket": 20.99
+      },
+      "dairy": {
+        "eggs": 1.99,
+        "milk": 1.99,
+        "butter": 2.99,
+        "cream_cheese": 3.99,
+        "cottage_cheese": 1.69,
+        "american_cheese": 5.49,
+        "sourcream": 1.99
+      },
+      "produce": {},
+      "deli": {}
+    },
+    "six60one": {
+      "chicken": {
+        "whole_chicken": 4.49,
+        "drumsticks": 3.99,
+        "legs": 3.59,
+        "thighs": 3.99,
+        "cutlets": 9.99,
+        "thin_cutlets": 12.99,
+        "pargiyot": 9.99,
+        "wings": 2.49,
+        "ground_chicken": 9.99
+      },
+      "beef": {
+        "ground_beef": 9.99,
+        "extra_lean": 11.99,
+        "patties": 11.99,
+        "sliders": 11.99,
+        "stew": 14.99,
+        "london_broil": 16.99,
+        "rib_steak": 34.99,
+        "flanken": 14.99,
+        "brisket": 14.99
+      },
+      "dairy": {
+        "eggs": 1.49,
+        "milk": 1.59,
+        "butter": 3.59,
+        "cream_cheese": 4.29,
+        "cottage_cheese": 4.49,
+        "american_cheese": 6.49,
+        "shredded_cheese": 4.49,
+        "sourcream": 3.49,
+        "yogurt": 0.79
+      },
+      "produce": {},
+      "deli": {}
+    },
+    "gourmetglatt": {
+      "chicken": {},
+      "beef": {},
+      "dairy": {},
+      "produce": {},
+      "deli": {}
+    },
+    "kmp": {
+      "chicken": {
+        "whole_chicken": 1.99,
+        "cut_in_8": 17.99,
+        "drumsticks": 6.99,
+        "legs": 14.99,
+        "thighs": 10.99,
+        "cutlets": 14.99,
+        "pargiyot": 10.99,
+        "wings": 7.99
+      },
+      "beef": {
+        "ground_beef": 16.99,
+        "patties": 16.99,
+        "sliders": 8.99,
+        "stew": 2.99,
+        "london_broil": 27.99,
+        "rib_steak": 32.99,
+        "flanken": 38.99,
+        "brisket": 9.99
+      },
+      "dairy": {},
+      "produce": {},
+      "deli": {}
+    }
+  },
+  "report": [
+    "Grand & Essex [hb] — raw 45c/48b -> 19 canonical cuts priced",
+    "gl: ERROR Error: page.evaluate: SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON",
+    "Glatt Express [mercatus] — raw 0c/0b -> 0 canonical cuts priced",
+    "SuperStop [hb] — raw 32c/49b -> 15 canonical cuts priced",
+    "Seasons (Lawrence) [hb] — raw 151c/71b -> 18 canonical cuts priced",
+    "661 (New York City) [hb] — raw 48c/67b -> 18 canonical cuts priced",
+    "gourmetglatt: ERROR Error: page.evaluate: SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON",
+    "Gourmet Glatt (Cedarhurst) [mercatus] — raw 0c/0b -> 0 canonical cuts priced",
+    "The Kosher Marketplace [shopify] — raw 2000c/2000b -> 16 canonical cuts priced"
+  ]
+}
