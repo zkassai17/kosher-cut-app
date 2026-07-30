@@ -20,10 +20,15 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Standard My Cloud Grocer department IDs (G&E / Seasons share this scheme).
+// Seed these so aisles the homepage mega-menu hides (only load on hover) still
+// get crawled — Seasons was missing frozen/cereal/snacks without them.
+const STD_DEPTS = [10387, 10395, 10705, 10438, 10364, 10379, 10612, 10450, 10384, 10432, 10397, 10526, 10555];
+
 const HB_STORES = [
   { id: 'ge', name: 'Grand & Essex', origin: 'https://shop.grandandessex.com', region: 'New-Jersey' },
   { id: 'superstop', name: 'SuperStop', origin: 'https://superstopnj.com', region: 'Lakewood' },
-  { id: 'seasons_law', name: 'Seasons (Lawrence)', origin: 'https://seasonskosher.com', region: 'Lawrence' },
+  { id: 'seasons_law', name: 'Seasons (Lawrence)', origin: 'https://seasonskosher.com', region: 'Lawrence', seedDepts: STD_DEPTS },
   { id: 'six60one', name: '661', origin: 'https://six60one.com', region: 'New-York-City' },
 ];
 
@@ -48,7 +53,9 @@ async function discoverDepartments(page, store) {
     }
     return Array.from(out.values());
   });
-  return cats.filter((c) => !SKIP_DEPT.test(c.slug)).map((c) => c.id);
+  const discovered = cats.filter((c) => !SKIP_DEPT.test(c.slug)).map((c) => c.id);
+  // Union with any seeded department IDs (for sites that hide aisles from the nav).
+  return Array.from(new Set([...discovered, ...(store.seedDepts || [])]));
 }
 
 async function visitCategory(page, store, catId) {
