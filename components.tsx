@@ -13,12 +13,13 @@ import {
   View,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUI } from './ui';
 import { useLocation } from './location';
 import { useBasket } from './basket';
-import { sans } from './theme';
+import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
 import { AREAS, PriceStatus, StoreWithDist } from './stores';
 import {
@@ -236,7 +237,11 @@ export function CompareRow({
       <View style={s.pillGroup}>
         {storeIds.map((sid, i) => {
           const p = prices[i];
-          const state: PillState = p == null ? 'none' : min != null && p === min ? (multi ? 'win' : 'tie') : 'lose';
+          // Only one store lists it → neutral (no BEST/TIE flag; caption says "Only X").
+          // Two+ stores: cheapest = BEST, unless the two cheapest are equal → TIE.
+          const isTie = multi && save === 0;
+          const state: PillState =
+            p == null ? 'none' : !multi ? 'none' : p === min ? (isTie ? 'tie' : 'win') : 'lose';
           return <PricePill key={sid} label={STORE_ABBR[sid] ?? sid} price={p} state={state} />;
         })}
       </View>
@@ -577,6 +582,21 @@ const STORE_VIS: Record<string, { mono: string; color: string }> = {
   kmp: { mono: 'KMP', color: '#3A6B8A' },
 };
 
+/* The koshercart wordmark: mono-line green cart + "kosher" (ink) "cart" (green),
+   lowercase Space Grotesk. */
+export function BrandMark({ size = 21 }: { size?: number }) {
+  const { t } = useUI();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+      <Ionicons name="cart-outline" size={size + 4} color={t.logoGreen} style={{ marginTop: -1 }} />
+      <Text style={{ fontFamily: display, fontSize: size, letterSpacing: -0.6 }}>
+        <Text style={{ color: t.ink }}>kosher</Text>
+        <Text style={{ color: t.logoGreen }}>cart</Text>
+      </Text>
+    </View>
+  );
+}
+
 export function FeedHeader({ onDeals }: { onDeals?: () => void }) {
   const { s } = useUI();
   const { origin } = useLocation();
@@ -585,12 +605,7 @@ export function FeedHeader({ onDeals }: { onDeals?: () => void }) {
   return (
     <View style={[s.feedHeaderWrap, { paddingTop: insets.top + 8 }]}>
       <View style={s.brandRow}>
-        <View style={s.brandLockup}>
-          <View style={s.markSm}>
-            <Text style={s.markSmText}>KC</Text>
-          </View>
-          <Text style={s.brandName}>Kosher Cut</Text>
-        </View>
+        <BrandMark />
         {onDeals ? (
           <Pressable style={s.dealsBtn} onPress={onDeals} hitSlop={8}>
             <Text style={{ fontSize: 14 }}>🔥</Text>
@@ -631,11 +646,8 @@ export function LocationHeader({ subtitle }: { subtitle?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <View style={[s.locHeader, { paddingTop: insets.top + 10 }]}>
-      <View style={[s.brandLockup, { marginBottom: 12 }]}>
-        <View style={s.markSm}>
-          <Text style={s.markSmText}>KC</Text>
-        </View>
-        <Text style={s.brandName}>Kosher Cut</Text>
+      <View style={{ marginBottom: 12 }}>
+        <BrandMark />
       </View>
       <Pressable onPress={() => setOpen(true)} hitSlop={8}>
         <Text style={s.locHeaderCity}>

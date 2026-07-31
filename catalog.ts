@@ -100,7 +100,8 @@ function groupKey(s: string): string {
     .toLowerCase()
     .replace(/\bounces?\b/g, 'oz')
     .replace(/\bpounds?\b/g, 'lb')
-    .replace(/\blight\b/g, 'lite'); // "Caesar Light" == "Caesar Lite" (same product, two spellings)
+    .replace(/\blight\b/g, 'lite') // "Caesar Light" == "Caesar Lite" (same product, two spellings)
+    .replace(/\bnot only\b/g, ' '); // brand flourish ("Not Only Cole Slaw" == "Cole Slaw")
   const pack = lower.match(/\b(\d+)\s?-?\s?(ct|pk|pack|counts?|packs)\b/);
   const packTok = pack ? `pk${pack[1]}` : '';
   const cleaned = lower
