@@ -17,6 +17,7 @@ import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { canonicalize } from './canonicalize.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -225,6 +226,17 @@ async function run() {
       const merc = JSON.parse(readFileSync(mercPath, 'utf8'));
       for (const [k, v] of Object.entries(merc)) if (Array.isArray(v) && v.length) out[k] = v;
     } catch {}
+  }
+  writeFileSync(path, JSON.stringify(out));
+
+  // Tag every product with a canonical identity key `c` (LLM, cached) so the app
+  // can match the same product across stores despite different names. Non-fatal:
+  // on any failure the catalog is returned unchanged and the app falls back to
+  // its regex matcher.
+  try {
+    await canonicalize(out);
+  } catch (e) {
+    console.error('canonicalize skipped:', String(e).slice(0, 160));
   }
   writeFileSync(path, JSON.stringify(out));
 

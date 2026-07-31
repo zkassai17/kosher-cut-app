@@ -10,14 +10,32 @@ export interface CatalogProduct {
   n: string;
   p: number;
   lb: boolean;
+  c?: string; // canonical identity key (LLM, from the daily feed) — matches the same product across stores
 }
 
 // Mutable so a fresh remote feed can replace the bundled snapshot at runtime.
 let CATALOG = raw as unknown as Record<string, CatalogProduct[]>;
 
+// name -> canonical key, so list/regulars pricing (which holds a product NAME
+// from one store) can match that product at another store by identity.
+let KEY_INDEX = new Map<string, string>();
+function buildKeyIndex(): void {
+  KEY_INDEX = new Map();
+  for (const arr of Object.values(CATALOG)) for (const p of arr) if (p.c) KEY_INDEX.set(p.n, p.c);
+}
+buildKeyIndex();
+
+// Canonical grouping key: prefer the LLM identity `c` from the feed; fall back to
+// the regex matcher for any product the canonicalizer hasn't tagged yet.
+const keyOfProduct = (p: CatalogProduct): string => p.c || groupKey(p.n);
+const keyForName = (name: string): string => KEY_INDEX.get(name) || groupKey(name);
+
 // Swap in a newer catalog (from the remote daily feed). Ignores empty/bad data.
 export function setCatalog(data: Record<string, CatalogProduct[]> | undefined | null): void {
-  if (data && typeof data === 'object' && Object.keys(data).length) CATALOG = data;
+  if (data && typeof data === 'object' && Object.keys(data).length) {
+    CATALOG = data;
+    buildKeyIndex();
+  }
 }
 
 export const hasCatalog = (storeId: string): boolean => (CATALOG[storeId]?.length ?? 0) > 0;
@@ -27,19 +45,19 @@ export const catalogSize = (storeId: string): number => CATALOG[storeId]?.length
 // Price of a catalog product (by name) at one store — for lists that hold any
 // searched product, not just the curated cuts.
 export function catalogPriceOf(storeId: string, name: string): number | null {
-  const key = groupKey(name);
+  const key = keyForName(name);
   if (!key) return null;
   let best: number | null = null;
   for (const prod of CATALOG[storeId] ?? []) {
-    if (groupKey(prod.n) === key && prod.p != null) best = best == null ? prod.p : Math.min(best, prod.p);
+    if (keyOfProduct(prod) === key && prod.p != null) best = best == null ? prod.p : Math.min(best, prod.p);
   }
   return best;
 }
 
 // Is this catalog product sold by weight (per lb) anywhere in the given stores?
 export function catalogIsLb(name: string, storeIds: string[]): boolean {
-  const key = groupKey(name);
-  for (const sid of storeIds) for (const prod of CATALOG[sid] ?? []) if (groupKey(prod.n) === key) return prod.lb;
+  const key = keyForName(name);
+  for (const sid of storeIds) for (const prod of CATALOG[sid] ?? []) if (keyOfProduct(prod) === key) return prod.lb;
   return false;
 }
 
@@ -175,7 +193,7 @@ export function searchCatalog(query: string, storeIds: string[], limit = 40): Ca
       if (prod.p == null) continue;
       const nn = norm(prod.n);
       if (!terms.every((t) => termMatches(t, nn))) continue;
-      const key = groupKey(prod.n) || nn;
+      const key = keyOfProduct(prod) || nn;
       const g = groups.get(key);
       if (g) {
         const existing = g.prices.find((x) => x.storeId === sid);

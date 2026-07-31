@@ -29,12 +29,20 @@ jobs:
 
       - name: Crawl store catalogs
         working-directory: scraper
+        env:
+          # Canonical product-matching (optional). Add repo secret ANTHROPIC_API_KEY
+          # to enable LLM identity matching; without it the app uses its regex
+          # matcher and nothing breaks. Set repo variable LLM_PROVIDER=openai +
+          # secret OPENAI_API_KEY to use OpenAI instead.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
         run: node catalog.mjs
 
       - name: Commit refreshed prices
         run: |
           git config user.name "kosher-cut-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data.json scraper/catalog.json
+          git add data.json scraper/catalog.json scraper/canon-cache.json
           git commit -m "Daily price refresh $(date -u +%Y-%m-%d)" || echo "No changes today"
           git push
