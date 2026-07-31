@@ -144,6 +144,34 @@ async function crawlShopify(page, store) {
   return Array.from(map.values());
 }
 
+// Compact "last seen" stamp: whole days since epoch. Kept per product so we can
+// age out only genuinely-delisted items, never items missing from one bad crawl.
+const TODAY = Math.floor(Date.now() / 86_400_000);
+const MAX_AGE = 30; // keep an unseen item for 30 days before dropping it
+
+const keyOf = (n) => String(n).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+// Durable per-store merge — the rule that keeps the feed complete every day:
+//   • a GOOD crawl updates price/lb for what it saw and stamps last-seen = today;
+//   • items the crawl DIDN'T see are kept (with their last-known price) until they
+//     go unseen for MAX_AGE days, then age out — so a real delist clears eventually
+//     but one thin crawl never wipes coverage (this is what dropped Seasons before);
+//   • an EMPTY crawl (site blocked/errored) is treated as "no information": keep
+//     everything untouched and age nothing.
+// Net effect: coverage only grows or holds day-to-day; it can't collapse on a bad run.
+function mergeStore(existing, crawled) {
+  if (!crawled.length) return existing; // blocked/failed → keep last-good as-is
+  const out = new Map();
+  for (const it of crawled) out.set(keyOf(it.n), { n: it.n, p: it.p, lb: it.lb, d: TODAY });
+  for (const it of existing) {
+    const k = keyOf(it.n);
+    if (out.has(k)) continue; // fresh crawl already has it
+    const seen = typeof it.d === 'number' ? it.d : TODAY; // grandfather legacy items
+    if (TODAY - seen <= MAX_AGE) out.set(k, { ...it, d: seen });
+  }
+  return Array.from(out.values());
+}
+
 async function run() {
   const browser = await chromium.launch({ headless: true, args: ['--disable-blink-features=AutomationControlled'] });
   const ctx = await browser.newContext({
@@ -162,8 +190,8 @@ async function run() {
     const existing = out[store.id] || [];
     try {
       const crawled = await crawlHb(page, store);
-      out[store.id] = crawled.length >= existing.length * 0.5 ? crawled : existing;
-      if (out[store.id] === existing) console.log(`    ! ${store.id}: crawl thin (${crawled.length}) — kept existing ${existing.length}`);
+      out[store.id] = mergeStore(existing, crawled);
+      console.log(`    ${store.id}: crawled ${crawled.length}, total after merge ${out[store.id].length}`);
     } catch (e) {
       console.error(`${store.id} failed:`, String(e).slice(0, 160));
       out[store.id] = existing;
@@ -175,10 +203,9 @@ async function run() {
     const existing = out[store.id] || [];
     try {
       const crawled = await crawlShopify(page, store);
-      // Keep the last-good data if a crawl comes back empty/tiny (CI block/error)
-      // so a bad run never wipes a store from the feed.
-      out[store.id] = crawled.length >= existing.length * 0.5 ? crawled : existing;
-      if (out[store.id] === existing) console.log(`    ! ${store.id}: crawl thin (${crawled.length}) — kept existing ${existing.length}`);
+      // Union-merge (see mergeStore): a thin/empty crawl never wipes coverage.
+      out[store.id] = mergeStore(existing, crawled);
+      console.log(`    ${store.id}: crawled ${crawled.length}, total after merge ${out[store.id].length}`);
     } catch (e) {
       console.error(`${store.id} failed:`, String(e).slice(0, 160));
       out[store.id] = existing;
