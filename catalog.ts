@@ -73,13 +73,34 @@ const FILLER = new Set([
   'cereal', 'original', 'classic',
 ]);
 
+// Some stores double the brand inside a name — Mercatus emits "Salad Mate
+// Saladmate Dressing Caesar" (brand field + brand-in-name), which the plain
+// anagram key sees as different from G&E's "Saladmate Caesar Dressing". Drop a
+// token when its letters are already covered by the OTHER tokens of the SAME name
+// (shortest first), so "salad"+"mate" collapse into the "saladmate" also present.
+// Scoped to one product's own tokens, so it only removes real in-name redundancy.
+function dedupeTokens(toks: string[]): string[] {
+  const order = toks.map((_, i) => i).sort((a, b) => toks[a].length - toks[b].length);
+  const dropped = new Set<number>();
+  for (const i of order) {
+    let others = '';
+    for (let j = 0; j < toks.length; j++) if (j !== i && !dropped.has(j)) others += toks[j];
+    if (toks[i] && others.includes(toks[i])) dropped.add(i);
+  }
+  return toks.filter((_, i) => !dropped.has(i));
+}
+
 // A looser key for GROUPING the same product across stores. We drop weight/
 // volume sizes (stores name them inconsistently), punctuation, and filler words,
 // then SORT the remaining tokens — so word order/wording don't matter ("Chobani
 // Black Cherry ..." matches at both stores). BUT we KEEP the multipack count
 // (a 4-pack must not merge with a single cup — that caused fake savings).
 function groupKey(s: string): string {
-  const lower = s.toLowerCase().replace(/\bounces?\b/g, 'oz').replace(/\bpounds?\b/g, 'lb');
+  const lower = s
+    .toLowerCase()
+    .replace(/\bounces?\b/g, 'oz')
+    .replace(/\bpounds?\b/g, 'lb')
+    .replace(/\blight\b/g, 'lite'); // "Caesar Light" == "Caesar Lite" (same product, two spellings)
   const pack = lower.match(/\b(\d+)\s?-?\s?(ct|pk|pack|counts?|packs)\b/);
   const packTok = pack ? `pk${pack[1]}` : '';
   const cleaned = lower
@@ -88,7 +109,7 @@ function groupKey(s: string): string {
     .replace(/\b\d+(\.\d+)?\s?x\b/g, ' ')
     .replace(/\b\d+(\.\d+)?\b/g, ' ')
     .replace(/[^a-z0-9 ]+/g, ' ');
-  const toks = cleaned.split(/\s+/).filter((tok) => tok && !FILLER.has(tok));
+  const toks = dedupeTokens(cleaned.split(/\s+/).filter((tok) => tok && !FILLER.has(tok)));
   // Sort the CHARACTERS of the joined tokens (an "anagram" key). This ignores
   // word order AND word spacing, so "Saladmate Balsamic" == "Salad Mate Balsamic"
   // and "Greek Yogurt Black Cherry" == "Black Cherry Flavored Greek Yogurt", and
