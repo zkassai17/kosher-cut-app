@@ -65,6 +65,12 @@ const FILLER = new Set([
   'greek', 'yogurt', 'yoghurt', 'flavored', 'flavor', 'blended', 'blend', 'style',
   'the', 'of', 'with', 'a', 'an', 'and', 'low', 'fat', 'nonfat', 'non', 'reduced',
   'dressing', 'nf', 'on', 'bottom',
+  // Generic category/marketing noise stores add inconsistently — dropping these
+  // pairs "Apple Jacks" with "Apple Jacks Cereal" and "Corn Flakes" with "Original
+  // Corn Flakes". We deliberately do NOT add distinguishing words (organic, gluten,
+  // free, whole, skim, mini, chocolate, vanilla, white, light/lite) — those separate
+  // genuinely different products and different price points.
+  'cereal', 'original', 'classic',
 ]);
 
 // A looser key for GROUPING the same product across stores. We drop weight/
@@ -117,6 +123,9 @@ function editWithin(a: string, b: string, max: number): boolean {
 // tolerance) close to one of the name's words?
 function termMatches(term: string, normName: string): boolean {
   if (normName.includes(term)) return true;
+  // Space-insensitive: a one-word search ("saladmate") matches a two-word name
+  // ("Salad Mate ...") and vice-versa.
+  if (term.length >= 5 && normName.replace(/ /g, '').includes(term)) return true;
   if (term.length < 4) return false; // too short to fuzzy safely
   const max = term.length >= 7 ? 2 : 1;
   for (const w of normName.split(' ')) {
