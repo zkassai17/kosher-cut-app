@@ -64,6 +64,10 @@ export function PricesScreen() {
   // e.g. "Salad Mate dressing"), not just the curated cuts. Only when searching.
   const catalogStores = query ? areaStoreIds(origin, maxMiles).filter(hasCatalog).slice(0, 4) : [];
   const catalogHits = query ? searchCatalog(query, catalogStores) : [];
+  // Real head-to-heads (2+ stores) lead; items only one nearby store carries go
+  // in a quiet section so they read as listings, not broken comparisons.
+  const cmpHits = catalogHits.filter((h) => h.prices.length >= 2);
+  const soloHits = catalogHits.filter((h) => h.prices.length < 2);
   const nothing = !blocks.length && !catalogHits.length;
 
   return (
@@ -92,19 +96,37 @@ export function PricesScreen() {
           </View>
         ))}
 
-        {query && catalogHits.length ? (
+        {query && cmpHits.length ? (
           <>
             <Text style={s.listHint}>
               More products · {catalogStores.map((id) => STORE_ABBR[id] ?? id).join(' · ')}
             </Text>
             <View style={{ paddingHorizontal: 18 }}>
-              {catalogHits.map((h) => (
+              {cmpHits.map((h) => (
                 <CompareRow
                   key={h.name}
                   item={h.name}
                   unit={h.lb ? 'lb' : 'ea'}
                   storeIds={h.prices.map((p) => p.storeId)}
                   prices={h.prices.map((p) => p.price)}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {query && soloHits.length ? (
+          <>
+            <Text style={[s.listHint, { marginTop: 14 }]}>Only at one store near you</Text>
+            <View style={{ paddingHorizontal: 18 }}>
+              {soloHits.map((h) => (
+                <CompareRow
+                  key={h.name}
+                  item={h.name}
+                  unit={h.lb ? 'lb' : 'ea'}
+                  storeIds={h.prices.map((p) => p.storeId)}
+                  prices={h.prices.map((p) => p.price)}
+                  soloClean
                 />
               ))}
             </View>
@@ -883,6 +905,10 @@ export function AddItemsModal({
   // specific dressing, dip, cereal…) to your list — not just the curated cuts.
   const catStores = query ? storeIds.filter(hasCatalog) : [];
   const catalogHits = query ? searchCatalog(query, catStores) : [];
+  // Comparisons (2+ stores) lead; single-store items go in a clean section below
+  // — shown as a plain price (their one store only), never with an empty dash.
+  const cmpHits = catalogHits.filter((h) => h.prices.length >= 2);
+  const soloHits = catalogHits.filter((h) => h.prices.length < 2);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -944,11 +970,11 @@ export function AddItemsModal({
             </View>
           ))}
 
-          {query && catalogHits.length ? (
+          {query && cmpHits.length ? (
             <>
               <Text style={s.listHint}>Other products</Text>
               <View style={{ paddingHorizontal: 18 }}>
-                {catalogHits.map((h) => (
+                {cmpHits.map((h) => (
                   <CompareRow
                     key={h.name}
                     item={h.name}
@@ -957,6 +983,27 @@ export function AddItemsModal({
                     id={h.name}
                     storeIds={storeIds}
                     prices={storeIds.map((sid) => h.prices.find((p) => p.storeId === sid)?.price ?? null)}
+                    {...rowExtra('catalog', h.name)}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          {query && soloHits.length ? (
+            <>
+              <Text style={[s.listHint, { marginTop: 14 }]}>Only at one store near you</Text>
+              <View style={{ paddingHorizontal: 18 }}>
+                {soloHits.map((h) => (
+                  <CompareRow
+                    key={h.name}
+                    item={h.name}
+                    unit={h.lb ? 'lb' : 'ea'}
+                    cat="catalog"
+                    id={h.name}
+                    storeIds={[h.prices[0].storeId]}
+                    prices={[h.prices[0].price]}
+                    soloClean
                     {...rowExtra('catalog', h.name)}
                   />
                 ))}

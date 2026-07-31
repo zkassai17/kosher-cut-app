@@ -167,6 +167,7 @@ export function CompareRow({
   id,
   checked,
   onToggle,
+  soloClean,
 }: {
   item: string;
   unit: Unit;
@@ -176,6 +177,7 @@ export function CompareRow({
   id?: string;
   checked?: boolean; // override the ✓ state (e.g. "this trip" picker)
   onToggle?: () => void; // override the add/remove action
+  soloClean?: boolean; // single-store row shown under an "only at one store" header — drop the redundant caption
 }) {
   const { s, t } = useUI();
   const basket = useBasket();
@@ -232,7 +234,7 @@ export function CompareRow({
           ) : null}
           <Text style={[s.cutName, { flexShrink: 1 }]}>{item}</Text>
         </View>
-        {caption ? <Text style={[s.cutSave, (!multi || save === 0) && s.cutSaveMuted]}>{caption}</Text> : null}
+        {caption && !soloClean ? <Text style={[s.cutSave, (!multi || save === 0) && s.cutSaveMuted]}>{caption}</Text> : null}
       </Pressable>
       <View style={s.pillGroup}>
         {storeIds.map((sid, i) => {
