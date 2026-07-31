@@ -164,6 +164,8 @@ export function CompareRow({
   prices,
   cat,
   id,
+  checked,
+  onToggle,
 }: {
   item: string;
   unit: Unit;
@@ -171,11 +173,15 @@ export function CompareRow({
   prices: (number | null)[];
   cat?: string;
   id?: string;
+  checked?: boolean; // override the ✓ state (e.g. "this trip" picker)
+  onToggle?: () => void; // override the add/remove action
 }) {
   const { s, t } = useUI();
   const basket = useBasket();
-  const canAdd = !!cat && !!id;
-  const inList = canAdd ? basket.has(cat!, id!) : false;
+  const overridden = onToggle !== undefined;
+  const canAdd = overridden || (!!cat && !!id);
+  const inList = overridden ? !!checked : cat && id ? basket.has(cat, id) : false;
+  const doToggle = overridden ? onToggle : cat && id ? () => basket.toggle(cat, id) : undefined;
 
   const valid = prices.filter((p): p is number => p != null);
   const min = valid.length ? Math.min(...valid) : null;
@@ -199,7 +205,7 @@ export function CompareRow({
     <View style={s.cutRow}>
       <Pressable
         style={s.cutLeft}
-        onPress={canAdd ? () => basket.toggle(cat!, id!) : undefined}
+        onPress={canAdd ? doToggle : undefined}
         onLongPress={reportPrice}
         hitSlop={6}
       >
@@ -770,6 +776,25 @@ export function PillTabs({
   options: { key: string; label: string }[];
 }) {
   const { s } = useUI();
+  // Few tabs → split the row evenly (full width). Many → horizontal scroll.
+  if (options.length <= 4) {
+    return (
+      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 18, paddingVertical: 4 }}>
+        {options.map((o) => {
+          const active = o.key === value;
+          return (
+            <Pressable
+              key={o.key}
+              style={[s.fchip, { flex: 1, justifyContent: 'center' }, active && s.fchipActive]}
+              onPress={() => onChange(o.key)}
+            >
+              <Text style={[s.fchipText, active && s.fchipTextActive]}>{o.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipScroll}>
       {options.map((o) => {

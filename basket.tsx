@@ -17,6 +17,7 @@ export interface NamedList {
 
 const STORAGE_KEY = 'kc.lists.v1';
 const ACTIVE_KEY = 'kc.activeList.v1';
+const REGULARS_KEY = 'kc.regulars.v1';
 
 const seedLists = (): NamedList[] =>
   PRESETS.map((p) => ({ id: p.id, label: p.label, emoji: p.emoji, items: p.items.map((i) => ({ ...i })) }));
@@ -35,6 +36,18 @@ interface BasketState {
   createList: (label: string, emoji: string) => void; // add a custom list + make it active
   deleteList: (id: string) => void; // remove a custom list
   isPreset: (id: string) => boolean; // preset lists can't be deleted, only reset
+  importList: (list: { label: string; emoji: string; items: BasketItem[] }) => void; // from a shared list
+  // "Just for this trip" items — added from the List tab, shown now but NOT saved
+  // into the list. In-memory only (clear on app restart), per active list.
+  tempItems: BasketItem[];
+  hasTemp: (cat: string, id: string) => boolean;
+  toggleTemp: (cat: string, id: string) => void;
+  removeTemp: (cat: string, id: string) => void;
+  // "My Regulars" — the products you always buy; we watch where each is cheapest.
+  regulars: BasketItem[];
+  hasRegular: (cat: string, id: string) => boolean;
+  toggleRegular: (cat: string, id: string) => void;
+  removeRegular: (cat: string, id: string) => void;
 }
 
 const BasketContext = createContext<BasketState | null>(null);
@@ -42,15 +55,19 @@ const BasketContext = createContext<BasketState | null>(null);
 export function BasketProvider({ children }: { children: ReactNode }) {
   const [lists, setLists] = useState<NamedList[]>(seedLists);
   const [activeId, setActiveId] = useState<string>(PRESETS[0].id);
+  // "This trip" items, keyed by list id — NOT persisted (fresh each app launch).
+  const [tempByList, setTempByList] = useState<Record<string, BasketItem[]>>({});
+  const [regulars, setRegulars] = useState<BasketItem[]>([]);
   const hydrated = useRef(false);
 
-  // Load saved lists once on startup.
+  // Load saved lists + regulars once on startup.
   useEffect(() => {
     (async () => {
       try {
-        const [rawLists, rawActive] = await Promise.all([
+        const [rawLists, rawActive, rawReg] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(ACTIVE_KEY),
+          AsyncStorage.getItem(REGULARS_KEY),
         ]);
         if (rawLists) {
           const stored: NamedList[] = JSON.parse(rawLists);
@@ -62,6 +79,7 @@ export function BasketProvider({ children }: { children: ReactNode }) {
           setLists(Array.from(byId.values()));
         }
         if (rawActive) setActiveId(rawActive);
+        if (rawReg) setRegulars(JSON.parse(rawReg));
       } catch {}
       hydrated.current = true;
     })();
@@ -74,6 +92,9 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated.current) AsyncStorage.setItem(ACTIVE_KEY, activeId).catch(() => {});
   }, [activeId]);
+  useEffect(() => {
+    if (hydrated.current) AsyncStorage.setItem(REGULARS_KEY, JSON.stringify(regulars)).catch(() => {});
+  }, [regulars]);
 
   const active = lists.find((l) => l.id === activeId) ?? lists[0];
 
@@ -113,8 +134,43 @@ export function BasketProvider({ children }: { children: ReactNode }) {
         });
       },
       isPreset: (id) => PRESETS.some((p) => p.id === id),
+      importList: (list) => {
+        const id = `custom-${Date.now()}`;
+        setLists((prev) => [
+          ...prev,
+          {
+            id,
+            label: (list.label || 'Shared list').trim(),
+            emoji: list.emoji || '🛒',
+            items: (list.items || []).map((i) => ({ cat: i.cat, id: i.id })),
+          },
+        ]);
+        setActiveId(id);
+      },
+      tempItems: tempByList[activeId] ?? [],
+      hasTemp: (cat, id) => (tempByList[activeId] ?? []).some((i) => i.cat === cat && i.id === id),
+      toggleTemp: (cat, id) =>
+        setTempByList((prev) => {
+          const cur = prev[activeId] ?? [];
+          const exists = cur.some((i) => i.cat === cat && i.id === id);
+          return { ...prev, [activeId]: exists ? cur.filter((i) => !(i.cat === cat && i.id === id)) : [...cur, { cat, id }] };
+        }),
+      removeTemp: (cat, id) =>
+        setTempByList((prev) => ({
+          ...prev,
+          [activeId]: (prev[activeId] ?? []).filter((i) => !(i.cat === cat && i.id === id)),
+        })),
+      regulars,
+      hasRegular: (cat, id) => regulars.some((i) => i.cat === cat && i.id === id),
+      toggleRegular: (cat, id) =>
+        setRegulars((prev) =>
+          prev.some((i) => i.cat === cat && i.id === id)
+            ? prev.filter((i) => !(i.cat === cat && i.id === id))
+            : [...prev, { cat, id }],
+        ),
+      removeRegular: (cat, id) => setRegulars((prev) => prev.filter((i) => !(i.cat === cat && i.id === id))),
     };
-  }, [lists, activeId, active]);
+  }, [lists, activeId, active, tempByList, regulars]);
 
   return <BasketContext.Provider value={value}>{children}</BasketContext.Provider>;
 }

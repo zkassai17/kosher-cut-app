@@ -159,21 +159,29 @@ async function run() {
 
   for (const store of HB_STORES) {
     if (ONLY && store.id !== ONLY) continue;
+    const existing = out[store.id] || [];
     try {
-      out[store.id] = await crawlHb(page, store);
+      const crawled = await crawlHb(page, store);
+      out[store.id] = crawled.length >= existing.length * 0.5 ? crawled : existing;
+      if (out[store.id] === existing) console.log(`    ! ${store.id}: crawl thin (${crawled.length}) — kept existing ${existing.length}`);
     } catch (e) {
       console.error(`${store.id} failed:`, String(e).slice(0, 160));
-      out[store.id] = out[store.id] || [];
+      out[store.id] = existing;
     }
     writeFileSync(path, JSON.stringify(out)); // checkpoint after each store
   }
   for (const store of SHOPIFY_STORES) {
     if (ONLY && store.id !== ONLY) continue;
+    const existing = out[store.id] || [];
     try {
-      out[store.id] = await crawlShopify(page, store);
+      const crawled = await crawlShopify(page, store);
+      // Keep the last-good data if a crawl comes back empty/tiny (CI block/error)
+      // so a bad run never wipes a store from the feed.
+      out[store.id] = crawled.length >= existing.length * 0.5 ? crawled : existing;
+      if (out[store.id] === existing) console.log(`    ! ${store.id}: crawl thin (${crawled.length}) — kept existing ${existing.length}`);
     } catch (e) {
       console.error(`${store.id} failed:`, String(e).slice(0, 160));
-      out[store.id] = out[store.id] || [];
+      out[store.id] = existing;
     }
     writeFileSync(path, JSON.stringify(out));
   }

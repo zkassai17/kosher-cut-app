@@ -3,6 +3,7 @@
 // store doesn't list it yet.
 
 import { CATEGORIES, itemMeta, money, priceOf, PRICES, Unit, unitSuffix } from './prices';
+import { catalogIsLb, catalogPriceOf } from './catalog';
 
 export { money, unitSuffix };
 
@@ -108,15 +109,18 @@ export interface BasketResult {
 // Total a shopping list at each store, plus the "split across stores" optimum.
 export function basketTotals(items: { cat: string; id: string }[], storeIds: string[]): BasketResult {
   const lines: BasketLine[] = items.map(({ cat, id }) => {
-    const meta = itemMeta(cat, id);
-    const prices = storeIds.map((sid) => priceOf(sid, cat, id));
+    // Catalog products (any searched item) are stored as { cat: 'catalog', id: name }
+    // and priced by matching the name across the full store catalogs.
+    const isCatalog = cat === 'catalog';
+    const prices = storeIds.map((sid) => (isCatalog ? catalogPriceOf(sid, id) : priceOf(sid, cat, id)));
+    const meta = isCatalog ? null : itemMeta(cat, id);
     const valid = prices.filter((p): p is number => p != null);
     const min = valid.length ? Math.min(...valid) : null;
     return {
       cat,
       id,
       label: meta?.label ?? id,
-      unit: meta?.unit ?? 'lb',
+      unit: isCatalog ? (catalogIsLb(id, storeIds) ? 'lb' : 'ea') : meta?.unit ?? 'lb',
       prices,
       cheapestIdx: min != null ? prices.indexOf(min) : -1,
     };
