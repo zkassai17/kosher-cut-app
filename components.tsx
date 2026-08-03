@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   Switch,
   Text,
   TextInput,
@@ -23,7 +24,8 @@ import { useProfile } from './profile';
 import { useBasket } from './basket';
 import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
-import { AREAS, PriceStatus, StoreWithDist } from './stores';
+import { AREAS, areaStores, PriceStatus, StoreWithDist } from './stores';
+import { hasCatalog } from './catalog';
 import {
   AreaDeal,
   biggestSavings,
@@ -783,12 +785,17 @@ export function LocationModal({ visible, onClose }: { visible: boolean; onClose:
 
 /* Account → Settings: name, and how location is decided (auto GPS vs a set area/
    address) + the mile range. Everything here persists (name, location prefs). */
+const APP_VERSION = 'koshercart v1';
+const FEEDBACK_EMAIL = 'zkassai17@gmail.com';
+
 export function SettingsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { s, t } = useUI();
+  const { s, t, themeMode, setThemeMode } = useUI();
   const { name, setName } = useProfile();
-  const { origin, maxMiles, autoLocate, gpsStatus, setArea, setMaxMiles, setAutoLocate, setAddress } = useLocation();
+  const { origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, setAddress } =
+    useLocation();
   const insets = useSafeAreaInsets();
   const [addr, setAddr] = useState('');
+  const shopStores = areaStores(origin, maxMiles).filter((st) => hasCatalog(st.id));
 
   const submitAddr = async () => {
     if (!addr.trim()) return;
@@ -922,6 +929,66 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
               maximumTrackTintColor={t.line}
               thumbTintColor={t.brand}
             />
+
+            {shopStores.length > 1 ? (
+              <>
+                <Text style={sectionLabel}>STORES YOU SHOP</Text>
+                <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, overflow: 'hidden' }}>
+                  {shopStores.map((st, i) => (
+                    <View
+                      key={st.id}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 13, borderTopWidth: i ? 1 : 0, borderTopColor: t.line }}
+                    >
+                      <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med, flexShrink: 1, marginRight: 12 }} numberOfLines={1}>
+                        {st.name}
+                      </Text>
+                      <Switch
+                        value={!hiddenStores.includes(st.id)}
+                        onValueChange={() => toggleStore(st.id)}
+                        trackColor={{ true: t.brand, false: t.lineStrong }}
+                        thumbColor="#fff"
+                      />
+                    </View>
+                  ))}
+                </View>
+                <Text style={{ color: t.inkFaint, fontSize: 12, marginTop: 8, fontFamily: sans.med }}>
+                  Turn off a store to leave it out of your comparisons.
+                </Text>
+              </>
+            ) : null}
+
+            <Text style={sectionLabel}>APPEARANCE</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {(['auto', 'light', 'dark'] as const).map((m) => {
+                const on = themeMode === m;
+                return (
+                  <Pressable key={m} onPress={() => setThemeMode(m)} style={[s.pick, { flex: 1, alignItems: 'center' }, on && s.pickActive]}>
+                    <Text style={[s.pickText, on && s.pickTextActive]}>{m === 'auto' ? 'Auto' : m === 'light' ? 'Light' : 'Dark'}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={sectionLabel}>ABOUT</Text>
+            <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, overflow: 'hidden' }}>
+              <Pressable
+                onPress={() => Linking.openURL(`mailto:${FEEDBACK_EMAIL}?subject=koshercart%20feedback`)}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 14 }}
+              >
+                <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med }}>✉️  Send feedback</Text>
+                <Text style={{ color: t.inkFaint, fontSize: 20 }}>›</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => Share.share({ message: 'koshercart — find where kosher groceries are cheapest near you.' })}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 14, borderTopWidth: 1, borderTopColor: t.line }}
+              >
+                <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med }}>⭐  Tell a friend</Text>
+                <Text style={{ color: t.inkFaint, fontSize: 20 }}>›</Text>
+              </Pressable>
+            </View>
+            <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 18, fontFamily: sans.med }}>
+              {APP_VERSION} · made in NJ
+            </Text>
           </ScrollView>
         </KeyboardAvoidingView>
       </View>

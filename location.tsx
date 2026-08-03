@@ -2,16 +2,18 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { AREAS, Area, milesBetween, Origin } from './stores';
+import { AREAS, Area, milesBetween, Origin, setHiddenStores } from './stores';
 
 interface LocationState {
   origin: Origin;
   maxMiles: number;
   autoLocate: boolean; // true = use device GPS automatically on launch
+  hiddenStores: string[]; // stores the user has toggled off in Settings
   gpsStatus: 'idle' | 'loading' | 'error';
   setArea: (a: Area) => void;
   setMaxMiles: (m: number) => void;
   setAutoLocate: (on: boolean) => void;
+  toggleStore: (id: string) => void;
   useMyLocation: () => Promise<void>;
   setAddress: (addr: string) => Promise<boolean>;
 }
@@ -50,6 +52,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [origin, setOrigin] = useState<Origin>(defaultOrigin);
   const [maxMiles, setMaxMiles] = useState(15);
   const [autoLocate, setAutoLocateState] = useState(false);
+  const [hiddenStores, setHiddenState] = useState<string[]>([]);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const hydrated = useRef(false);
 
@@ -81,6 +84,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           const p = JSON.parse(raw);
           if (typeof p.maxMiles === 'number') setMaxMiles(p.maxMiles);
           if (typeof p.autoLocate === 'boolean') setAutoLocateState(p.autoLocate);
+          if (Array.isArray(p.hiddenStores)) {
+            setHiddenState(p.hiddenStores);
+            setHiddenStores(p.hiddenStores);
+          }
           if (p.autoLocate) runGps();
           else if (p.origin && p.origin.label) setOrigin(p.origin);
         }
@@ -92,8 +99,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   // Persist prefs on change (after the first load, so we don't clobber saved data).
   useEffect(() => {
     if (!hydrated.current) return;
-    AsyncStorage.setItem(PREFS_KEY, JSON.stringify({ origin, maxMiles, autoLocate })).catch(() => {});
-  }, [origin, maxMiles, autoLocate]);
+    AsyncStorage.setItem(PREFS_KEY, JSON.stringify({ origin, maxMiles, autoLocate, hiddenStores })).catch(() => {});
+  }, [origin, maxMiles, autoLocate, hiddenStores]);
+
+  const toggleStore = useCallback((id: string) => {
+    setHiddenState((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      setHiddenStores(next); // keep the pure areaStoreIds() filter in sync
+      return next;
+    });
+  }, []);
 
   const setArea = useCallback((a: Area) => {
     setAutoLocateState(false); // choosing a fixed area turns off auto-locate
@@ -131,8 +146,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<LocationState>(
-    () => ({ origin, maxMiles, autoLocate, gpsStatus, setArea, setMaxMiles, setAutoLocate, useMyLocation: runGps, setAddress }),
-    [origin, maxMiles, autoLocate, gpsStatus, setArea, setAutoLocate, runGps, setAddress],
+    () => ({ origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, useMyLocation: runGps, setAddress }),
+    [origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setAutoLocate, toggleStore, runGps, setAddress],
   );
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;

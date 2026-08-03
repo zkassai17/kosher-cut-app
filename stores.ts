@@ -85,13 +85,27 @@ export function storesNear(origin: Origin, maxMiles: number): StoreWithDist[] {
     .sort((a, b) => a.miles - b.miles);
 }
 
+// Stores the user has chosen to hide from comparisons (Settings → stores you shop).
+let HIDDEN = new Set<string>();
+export function setHiddenStores(ids: string[]): void {
+  HIDDEN = new Set(ids);
+}
+export const isStoreHidden = (id: string): boolean => HIDDEN.has(id);
+
+// Every store in the current view's area, nearest first (ignores the hidden set,
+// so the Settings toggle can list them all to turn back on).
+export function areaStores(origin: Origin, maxMiles: number): StoreWithDist[] {
+  return storesNear(origin, maxMiles).filter((n) => (origin.areaId ? n.areaId === origin.areaId : true));
+}
+
 // The stores that "belong" to the current view, nearest first. If an area is
 // picked (Teaneck, Five Towns, …) we scope to that area only, so a store from a
 // different city never bleeds in. With GPS we fall back to nearest-by-distance.
+// Stores the user hid in Settings are dropped.
 export function areaStoreIds(origin: Origin, maxMiles: number): string[] {
-  return storesNear(origin, maxMiles)
-    .filter((n) => (origin.areaId ? n.areaId === origin.areaId : true))
-    .map((n) => n.id);
+  return areaStores(origin, maxMiles)
+    .map((n) => n.id)
+    .filter((id) => !HIDDEN.has(id));
 }
 
 // The two stores we have live price data for, keyed for distance gating.
