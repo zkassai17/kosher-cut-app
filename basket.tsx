@@ -2,6 +2,8 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useSt
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { BasketItem, PRESETS } from './presets';
+import { useAuth } from './auth';
+import { pullUserData, pushUserData } from './sync';
 
 // A named, editable shopping list (Shabbos, Rosh Hashana, …). Each one is
 // independent — selecting one shows only its items; adding an item from the
@@ -54,12 +56,14 @@ interface BasketState {
 const BasketContext = createContext<BasketState | null>(null);
 
 export function BasketProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [lists, setLists] = useState<NamedList[]>(seedLists);
   const [activeId, setActiveId] = useState<string>(PRESETS[0].id);
   // "This trip" items, keyed by list id — NOT persisted (fresh each app launch).
   const [tempByList, setTempByList] = useState<Record<string, BasketItem[]>>({});
   const [regulars, setRegulars] = useState<BasketItem[]>([]);
   const hydrated = useRef(false);
+  const syncedUser = useRef<string | null>(null); // whose cloud data we've pulled
 
   // Load saved lists + regulars once on startup.
   useEffect(() => {
@@ -93,6 +97,41 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated.current) AsyncStorage.setItem(ACTIVE_KEY, activeId).catch(() => {});
   }, [activeId]);
+  // ---- Cloud sync (signed-in users) --------------------------------------
+  // On sign-in: pull the account's lists/regulars. If the account has none yet,
+  // seed it from what's on this device. Remote is the source of truth once signed in.
+  useEffect(() => {
+    if (!user) {
+      syncedUser.current = null;
+      return;
+    }
+    if (syncedUser.current === user.id) return;
+    syncedUser.current = user.id;
+    let alive = true;
+    (async () => {
+      const remote = await pullUserData(user.id);
+      if (!alive) return;
+      if (remote && remote.lists.length) {
+        setLists(remote.lists);
+        setActiveId(remote.lists[0]?.id ?? PRESETS[0].id);
+        setRegulars(remote.regulars);
+      } else {
+        pushUserData(user.id, lists, regulars); // first sign-in on this account — seed from local
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Push changes up (debounced) once we've pulled this user's data.
+  useEffect(() => {
+    if (!user || syncedUser.current !== user.id) return;
+    const t = setTimeout(() => pushUserData(user.id, lists, regulars), 800);
+    return () => clearTimeout(t);
+  }, [lists, regulars, user]);
+
   useEffect(() => {
     if (hydrated.current) AsyncStorage.setItem(REGULARS_KEY, JSON.stringify(regulars)).catch(() => {});
   }, [regulars]);

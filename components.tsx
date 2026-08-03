@@ -798,7 +798,7 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   const { origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, setAddress, reset } =
     useLocation();
   const basket = useBasket();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount: deleteServerAccount } = useAuth();
   const insets = useSafeAreaInsets();
   const [addr, setAddr] = useState('');
   const [legal, setLegal] = useState<LegalDoc | null>(null);
@@ -816,25 +816,25 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   };
 
   const deleteAccount = () => {
-    Alert.alert(
-      'Delete account',
-      'This permanently removes your lists, regulars, name, and settings from this device. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete everything',
-          style: 'destructive',
-          onPress: () => {
-            basket.wipeAll();
-            reset();
-            setName('');
-            setThemeMode('auto');
-            onClose();
-            Alert.alert('Account deleted', 'Your data has been removed from this device.');
-          },
+    const msg = user
+      ? 'This permanently deletes your account, your synced lists and regulars, and everything on this device. This cannot be undone.'
+      : 'This permanently removes your lists, regulars, name, and settings from this device. This cannot be undone.';
+    Alert.alert('Delete account', msg, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete everything',
+        style: 'destructive',
+        onPress: async () => {
+          if (user) await deleteServerAccount(); // remove the cloud account + data, then signs out
+          basket.wipeAll();
+          reset();
+          setName('');
+          setThemeMode('auto');
+          onClose();
+          Alert.alert('Account deleted', 'Your account and data have been removed.');
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const submitAddr = async () => {

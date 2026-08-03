@@ -48,11 +48,35 @@ a Google OAuth client + the provider enabled in Supabase:
 
 That's it — tap "Continue with Google" and it opens Google, then drops you back signed in.
 
-## Not yet wired (follow-up)
+## Cloud sync (built — needs the table created once)
 
-- **Syncing your lists to the cloud** — auth is in place but lists still live only on
-  the device. Next step: a `lists` table with Row Level Security keyed to `auth.uid()`,
-  and push/pull on sign-in. Ask and I'll build it.
+Lists + regulars now sync to the signed-in account. Turn it on by creating the table:
+
+1. Supabase dashboard → **SQL Editor** → **New query**.
+2. Paste all of **`supabase/schema.sql`** → **Run**.
+
+That's it — the app pulls your lists on sign-in and pushes changes as you edit. It's
+non-fatal: until the table exists, sync silently no-ops and the app uses local data.
+
+## Full account deletion (built — deploy the function once)
+
+"Delete account" wipes local data and (for signed-in users) calls an Edge Function to
+delete the server account + cloud data. Deploy it once (needs the Supabase CLI):
+
+```bash
+npm i -g supabase
+supabase login
+supabase functions deploy delete-user --project-ref hgfgujtusngurhlujldp
+```
+
+Until it's deployed, "Delete account" still signs you out and clears local data — it
+just won't remove the server user yet.
+
+## Not yet wired (build-time follow-ups)
+
+- **Native Google sign-in** — cleaner than the web flow (no Supabase URL shown); needs
+  an iOS OAuth client + a real build. Do at build time.
+- **Apple sign-in** — required by Apple because Google is offered; needs the $99 account.
 
 ## Deleting a real account
 
