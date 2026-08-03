@@ -1043,6 +1043,15 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
 
             <Text style={sectionLabel}>ACCOUNT</Text>
             <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, overflow: 'hidden' }}>
+              {user ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: t.line }}>
+                  <Ionicons name="cloud-done-outline" size={20} color={t.brand} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: t.ink, fontSize: 14.5, fontFamily: sans.semi }}>Synced</Text>
+                    <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 1, fontFamily: sans.med }} numberOfLines={1}>{user.email}</Text>
+                  </View>
+                </View>
+              ) : null}
               <Pressable onPress={logout} style={{ paddingHorizontal: 14, paddingVertical: 15 }}>
                 <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.semi }}>Log out</Text>
               </Pressable>
