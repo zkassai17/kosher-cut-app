@@ -20,6 +20,7 @@ export interface Theme {
   goldStrong: string;
   oxblood: string;
   live: string;
+  logoGreen: string;
 }
 
 const light: Theme = {
@@ -40,6 +41,7 @@ const light: Theme = {
   goldStrong: '#B8851E',
   oxblood: '#8A3B34',
   live: '#2C7A5B',
+  logoGreen: '#3DAE63',
 };
 
 const dark: Theme = {
@@ -60,6 +62,7 @@ const dark: Theme = {
   goldStrong: '#E7BC5B',
   oxblood: '#CE8478',
   live: '#57C596',
+  logoGreen: '#57C87C',
 };
 
 export const getTheme = (scheme: string | null | undefined): Theme =>
@@ -71,6 +74,9 @@ export const mono = Platform.select({
   android: 'monospace',
   default: 'monospace',
 }) as string;
+
+// Space Grotesk — the geometric display face used for the koshercart wordmark.
+export const display = 'SpaceGrotesk_700Bold';
 
 // Manrope — a clean, modern sans (loaded in App.tsx via expo-font).
 export const sans = {

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Kosher Cut",
+    "name": "koshercart",
     "slug": "kosher-cut-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -25,7 +25,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Kosher Cut uses your location to show the kosher stores closest to you."
+          "locationWhenInUsePermission": "koshercart uses your location to show the kosher stores closest to you."
         }
       ],
       "expo-font"

@@ -9,6 +9,7 @@ import {
   Manrope_700Bold,
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
+import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import {
   DarkTheme as NavDark,
   DefaultTheme as NavLight,
@@ -84,6 +85,7 @@ export default function App() {
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
+    SpaceGrotesk_700Bold,
   });
   if (!loaded) return null;
   // Default every un-styled Text to Manrope (weights are set explicitly in styles).

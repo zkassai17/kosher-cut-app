@@ -47,5 +47,5 @@ export function shareText(opts: {
   const { label, emoji, storeLine, itemLabels } = opts;
   const lines = itemLabels.length ? itemLabels.map((n) => `• ${n}`).join('\n') : '(no items yet)';
   const store = storeLine ? `🏪 ${storeLine}\n\n` : '';
-  return `${emoji} ${label} — shopping list\n\n${store}${lines}\n\nShared from Kosher Cut`;
+  return `${emoji} ${label} — shopping list\n\n${store}${lines}\n\nShared from koshercart`;
 }
