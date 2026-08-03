@@ -42,7 +42,7 @@ export const PRIVACY: LegalDoc = {
       p: ['Your data lives only on your device. Remove all of it any time from Settings → Delete account, or by deleting the app.'],
     },
     { h: 'Children', p: ['The app is not directed to children under 13 and does not knowingly collect information from them.'] },
-    { h: 'Contact', p: ['Questions? Email zkassai17@gmail.com.'] },
+    { h: 'Contact', p: ['Questions? Email koshercutapp@gmail.com.'] },
   ],
 };
 
@@ -64,6 +64,6 @@ export const TERMS: LegalDoc = {
       h: 'No warranty',
       p: ['The app is provided "as is," without warranties of any kind. To the fullest extent permitted by law, we are not liable for any damages arising from your use of the app.'],
     },
-    { h: 'Contact', p: ['Questions? Email zkassai17@gmail.com.'] },
+    { h: 'Contact', p: ['Questions? Email koshercutapp@gmail.com.'] },
   ],
 };

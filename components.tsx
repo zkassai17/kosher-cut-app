@@ -788,7 +788,7 @@ export function LocationModal({ visible, onClose }: { visible: boolean; onClose:
 /* Account → Settings: name, and how location is decided (auto GPS vs a set area/
    address) + the mile range. Everything here persists (name, location prefs). */
 const APP_VERSION = 'koshercart v1';
-const FEEDBACK_EMAIL = 'zkassai17@gmail.com';
+const FEEDBACK_EMAIL = 'koshercutapp@gmail.com';
 const PRIVACY_URL = 'https://zkassai17.github.io/kosher-cut-app/privacy.html';
 const TERMS_URL = 'https://zkassai17.github.io/kosher-cut-app/terms.html';
 
