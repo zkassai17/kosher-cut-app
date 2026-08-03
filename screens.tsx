@@ -434,7 +434,7 @@ export function ListScreen() {
 /* ---------- Account: personal home + a tappable list of your lists ---------- */
 export function AccountScreen() {
   const { s, t } = useUI();
-  const { origin, maxMiles, autoLocate } = useLocation();
+  const { origin, maxMiles } = useLocation();
   const { name } = useProfile();
   const basket = useBasket();
   const [showAdd, setShowAdd] = useState(false);
@@ -448,18 +448,6 @@ export function AccountScreen() {
   const openList = (id: string) => {
     basket.setActive(id);
     setShowAdd(true);
-  };
-
-  const settingRow = {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    backgroundColor: t.surface,
-    borderWidth: 1,
-    borderColor: t.line,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
   };
 
   return (
@@ -479,6 +467,13 @@ export function AccountScreen() {
               {basket.lists.length} lists · {totalItems} items saved
             </Text>
           </View>
+          <Pressable
+            onPress={() => setShowSettings(true)}
+            hitSlop={10}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 18 }}>⚙️</Text>
+          </Pressable>
         </View>
 
         {/* My Regulars — the products you always buy, watched for the best price */}
@@ -603,35 +598,8 @@ export function AccountScreen() {
           <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>+ New list</Text>
         </Pressable>
 
-        {/* Settings — makes it feel like an account */}
-        <Text style={s.listHint}>SETTINGS</Text>
-        <View style={{ paddingHorizontal: 18, gap: 10 }}>
-          <Pressable style={settingRow} onPress={() => setShowSettings(true)}>
-            <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansMed }}>🙂  Name</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-              <Text style={{ color: name ? t.inkSoft : t.inkFaint, fontSize: 14, fontFamily: sansSemi }} numberOfLines={1}>
-                {name || 'Add your name'}
-              </Text>
-              <Text style={{ color: t.inkFaint, fontSize: 20, fontFamily: sansMed }}>›</Text>
-            </View>
-          </Pressable>
-          <Pressable style={settingRow} onPress={() => setShowSettings(true)}>
-            <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansMed }}>📍  Location</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-              <Text style={{ color: t.inkSoft, fontSize: 14, fontFamily: sansSemi }} numberOfLines={1}>
-                {autoLocate ? 'Automatic' : origin.label} · {maxMiles} mi
-              </Text>
-              <Text style={{ color: t.inkFaint, fontSize: 20, fontFamily: sansMed }}>›</Text>
-            </View>
-          </Pressable>
-          <View style={settingRow}>
-            <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansMed }}>☁️  Sync across devices</Text>
-            <Text style={{ color: t.inkFaint, fontSize: 13, fontFamily: sansSemi }}>Coming soon</Text>
-          </View>
-        </View>
-
         <Text
-          style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 22, paddingHorizontal: 34, lineHeight: 18, fontFamily: sansMed }}
+          style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 26, paddingHorizontal: 34, lineHeight: 18, fontFamily: sansMed }}
         >
           Your lists are saved on this device. Sign-in to sync across devices is coming soon.
         </Text>
