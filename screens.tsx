@@ -75,7 +75,7 @@ export function PricesScreen() {
       <FeedHeader onDeals={() => setShowDeals(true)} />
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 36, paddingTop: 4 }}>
         <SearchBar value={q} onChange={setQ} />
-        <Text style={[s.listHint, { marginBottom: 2 }]}>Prices updated {updatedAt} · search v2</Text>
+        <Text style={[s.listHint, { marginBottom: 2 }]}>Prices updated {updatedAt}</Text>
 
         {!query ? (
           <View style={{ marginTop: 4 }}>
