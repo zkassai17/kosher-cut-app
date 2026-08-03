@@ -443,7 +443,6 @@ export function AccountScreen() {
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
-  const totalItems = basket.lists.reduce((n, l) => n + l.items.length, 0);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
 
   const openList = (id: string) => {
@@ -465,7 +464,7 @@ export function AccountScreen() {
           <View style={{ flex: 1 }}>
             <Text style={s.h1clean} numberOfLines={1}>{name ? `Hi, ${name}` : 'Your account'}</Text>
             <Text style={{ color: t.inkSoft, fontSize: 13, marginTop: 2, fontFamily: sansMed }}>
-              {basket.lists.length} lists · {totalItems} items saved
+              {basket.lists.length} {basket.lists.length === 1 ? 'list' : 'lists'}
             </Text>
           </View>
           <Pressable onPress={() => setShowSettings(true)} hitSlop={12} style={{ padding: 4 }}>
