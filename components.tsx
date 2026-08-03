@@ -26,6 +26,7 @@ import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
 import { AREAS, areaStores, PriceStatus, StoreWithDist } from './stores';
 import { hasCatalog } from './catalog';
+import { LegalDoc, PRIVACY, TERMS } from './legal';
 import {
   AreaDeal,
   biggestSavings,
@@ -798,7 +799,15 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   const basket = useBasket();
   const insets = useSafeAreaInsets();
   const [addr, setAddr] = useState('');
+  const [legal, setLegal] = useState<LegalDoc | null>(null);
   const shopStores = areaStores(origin, maxMiles).filter((st) => hasCatalog(st.id));
+
+  const logout = () =>
+    Alert.alert(
+      "You're not signed in",
+      'koshercart saves your lists on this device — there’s no account to log out of yet. Sign-in & sync across devices are coming soon.',
+      [{ text: 'OK' }],
+    );
 
   const deleteAccount = () => {
     Alert.alert(
@@ -1011,14 +1020,14 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
                 <Text style={{ color: t.inkFaint, fontSize: 20 }}>›</Text>
               </Pressable>
               <Pressable
-                onPress={() => Linking.openURL(PRIVACY_URL)}
+                onPress={() => setLegal(PRIVACY)}
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 14, borderTopWidth: 1, borderTopColor: t.line }}
               >
                 <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med }}>🔒  Privacy Policy</Text>
                 <Text style={{ color: t.inkFaint, fontSize: 20 }}>›</Text>
               </Pressable>
               <Pressable
-                onPress={() => Linking.openURL(TERMS_URL)}
+                onPress={() => setLegal(TERMS)}
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 14, borderTopWidth: 1, borderTopColor: t.line }}
               >
                 <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med }}>📄  Terms of Use</Text>
@@ -1027,21 +1036,59 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
             </View>
 
             <Text style={sectionLabel}>ACCOUNT</Text>
-            <Pressable
-              onPress={deleteAccount}
-              style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 15 }}
-            >
-              <Text style={{ color: t.oxblood, fontSize: 15, fontFamily: sans.bold }}>Delete account</Text>
-              <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 3, fontFamily: sans.med }}>
-                Erase your lists, regulars, name and settings from this device.
-              </Text>
-            </Pressable>
+            <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, overflow: 'hidden' }}>
+              <Pressable onPress={logout} style={{ paddingHorizontal: 14, paddingVertical: 15 }}>
+                <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.semi }}>Log out</Text>
+              </Pressable>
+              <Pressable onPress={deleteAccount} style={{ paddingHorizontal: 14, paddingVertical: 15, borderTopWidth: 1, borderTopColor: t.line }}>
+                <Text style={{ color: t.oxblood, fontSize: 15, fontFamily: sans.bold }}>Delete account</Text>
+                <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 3, fontFamily: sans.med }}>
+                  Erase your lists, regulars, name and settings from this device.
+                </Text>
+              </Pressable>
+            </View>
 
             <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 22, fontFamily: sans.med }}>
               {APP_VERSION} · made in NJ
             </Text>
           </ScrollView>
         </KeyboardAvoidingView>
+        <LegalModal doc={legal} onClose={() => setLegal(null)} />
+      </View>
+    </Modal>
+  );
+}
+
+/* In-app Privacy Policy / Terms viewer — a bundled copy so the links never 404. */
+export function LegalModal({ doc, onClose }: { doc: LegalDoc | null; onClose: () => void }) {
+  const { s, t } = useUI();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={!!doc} animationType="slide" onRequestClose={onClose}>
+      <View style={[s.root, { paddingTop: insets.top + 8 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}>
+          <Text style={s.h1clean}>{doc?.title ?? ''}</Text>
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            style={{ paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, color: '#fff', fontFamily: sans.bold }}>Done</Text>
+          </Pressable>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: insets.bottom + 40 }}>
+          <Text style={{ color: t.inkFaint, fontSize: 12.5, marginTop: 6, fontFamily: sans.med }}>Last updated {doc?.updated ?? ''}</Text>
+          {doc?.sections.map((sec, i) => (
+            <View key={i} style={{ marginTop: sec.h ? 22 : 12 }}>
+              {sec.h ? <Text style={{ color: t.ink, fontSize: 16, fontFamily: sans.bold, marginBottom: 6 }}>{sec.h}</Text> : null}
+              {sec.p.map((para, j) => (
+                <Text key={j} style={{ color: t.inkSoft, fontSize: 14, lineHeight: 21, marginTop: j ? 8 : 0, fontFamily: sans.med }}>
+                  {para}
+                </Text>
+              ))}
+            </View>
+          ))}
+        </ScrollView>
       </View>
     </Modal>
   );
