@@ -216,6 +216,7 @@ export function DealsModal({ visible, onClose }: { visible: boolean; onClose: ()
 export function StoresScreen() {
   const { s } = useUI();
   const { origin, maxMiles } = useLocation();
+  useData(); // re-render when the daily feed lands so the weekly-ad date updates
   const nearby = storesNear(origin, maxMiles);
 
   return (

@@ -1116,6 +1116,11 @@ export function WeeklyAdModal({
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}>
           <View style={{ paddingHorizontal: 18 }}>
+            {!ad.highlights.length ? (
+              <Text style={{ color: t.inkSoft, fontSize: 14.5, lineHeight: 21, fontFamily: sans.med, marginTop: 4 }}>
+                Cedar's full weekly circular — meat, produce, dairy, grocery & deli — is one tap away.
+              </Text>
+            ) : null}
             {ad.highlights.map((it) => (
               <View
                 key={it.name}
@@ -1150,8 +1155,8 @@ export function WeeklyAdModal({
             </Pressable>
 
             <Text style={{ color: t.inkFaint, fontSize: 12, marginTop: 14, lineHeight: 18, fontFamily: sans.med }}>
-              Sale prices are set by the store and effective {ad.effective}. Highlights are a sample — tap above for
-              the full flyer (meat, produce, dairy, grocery & deli).
+              Sale prices are set by the store and effective {ad.effective}.
+              {ad.highlights.length ? ' Highlights are a sample — tap above for the full flyer.' : ''}
             </Text>
           </View>
         </ScrollView>

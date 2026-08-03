@@ -9,6 +9,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { CatalogProduct } from './catalog';
+import { WeeklyAd } from './weeklyAds';
 
 // Published daily by the GitHub Actions scraper. Until the repo is pushed &
 // Actions runs, this 404s and the app quietly uses the bundled data — safe.
@@ -19,6 +20,7 @@ const CACHE_KEY = 'kc.remoteData.v1';
 export interface RemoteData {
   updatedAt: string; // e.g. "Jul 30, 2026"
   catalog?: Record<string, CatalogProduct[]>;
+  weeklyAds?: Record<string, WeeklyAd>; // per-store circular (date/link/highlights), refreshed weekly by the scraper
 }
 
 export async function loadCachedData(): Promise<RemoteData | null> {

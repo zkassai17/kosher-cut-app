@@ -18,23 +18,27 @@ export interface WeeklyAd {
   highlights: AdItem[];
 }
 
+// Bundled FALLBACK only — the live date + highlights come from the daily feed
+// (scraper reads Cedar's weekly-ads page each run) so this never has to be
+// hand-edited. `url` is the always-current circular page.
 export const WEEKLY_ADS: Record<string, WeeklyAd> = {
   cedar: {
-    effective: 'July 26–31',
+    effective: '',
     url: 'https://thecedarmarket.com/weekly-ads/',
-    highlights: [
-      { name: 'Chicken Cutlets (family pack)', price: '$7.49/lb' },
-      { name: 'Whole Chicken, spatchcock split', price: '$3.49/lb' },
-      { name: 'Chicken Legs (super family pack)', price: '$2.79/lb' },
-      { name: 'Extra Lean Ground Shoulder', price: '$9.49/lb' },
-      { name: "Norman's Whipped Cream Cheese, 8oz", price: '2 / $7' },
-      { name: 'Heinz Ketchup, 38oz', price: '2 / $4' },
-      { name: 'Wesson Canola Oil, 1 gal', price: '$12.99' },
-      { name: "Aaron's Kosher Salami, 16oz", price: '$13.99' },
-      { name: 'Sweet Vidalia Onions', price: '89¢/lb' },
-      { name: 'Clementines, 3 lb bag', price: '$3.99' },
-    ],
+    highlights: [],
   },
 };
 
-export const weeklyAdFor = (storeId: string): WeeklyAd | undefined => WEEKLY_ADS[storeId];
+// Feed override (from data.json → setWeeklyAds), mirroring the catalog swap. So
+// the "This week's ad" date/link/highlights update weekly with no app rebuild.
+let FEED_ADS: Record<string, WeeklyAd> = {};
+export function setWeeklyAds(ads: Record<string, WeeklyAd> | undefined | null): void {
+  if (ads && typeof ads === 'object') FEED_ADS = ads;
+}
+
+export const weeklyAdFor = (storeId: string): WeeklyAd | undefined => {
+  const feed = FEED_ADS[storeId];
+  if (feed && feed.effective) return feed; // prefer the live feed once it has a date
+  const bundled = WEEKLY_ADS[storeId];
+  return bundled && bundled.effective ? bundled : undefined; // hide the badge until we have a real date
+};

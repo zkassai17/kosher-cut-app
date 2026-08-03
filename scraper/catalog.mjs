@@ -18,6 +18,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalize } from './canonicalize.mjs';
+import { cedarWeeklyAd } from './cedar.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -240,10 +241,20 @@ async function run() {
   }
   writeFileSync(path, JSON.stringify(out));
 
-  // Emit the app feed: { updatedAt, catalog } at the repo root (data.json).
+  // Cedar publishes only a weekly circular (no online store). Read it so the app's
+  // "This week's ad" date/link auto-update weekly. Non-fatal (keeps last-good).
+  let weeklyAds;
+  try {
+    const cedarAd = await cedarWeeklyAd();
+    if (cedarAd && cedarAd.effective) weeklyAds = { cedar: cedarAd };
+  } catch (e) {
+    console.error('cedar weekly ad skipped:', String(e).slice(0, 160));
+  }
+
+  // Emit the app feed: { updatedAt, catalog, weeklyAds } at the repo root (data.json).
   const stamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const feedPath = join(__dirname, '..', 'data.json');
-  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out }));
+  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, ...(weeklyAds ? { weeklyAds } : {}) }));
 
   const total = Object.entries(out).map(([k, a]) => `${k}:${a.length}`).join('  ');
   console.log(`\nWrote ${path}\n  ${total}\n  feed -> ${feedPath} (updatedAt ${stamp})`);

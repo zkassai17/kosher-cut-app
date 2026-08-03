@@ -3,6 +3,7 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { setCatalog } from './catalog';
 import { PRICES_UPDATED } from './prices';
 import { fetchRemoteData, loadCachedData } from './remote';
+import { setWeeklyAds } from './weeklyAds';
 
 // Exposes the "prices as of" date and bumps `version` whenever fresher data is
 // swapped in, so screens re-render with the new catalog.
@@ -19,9 +20,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let alive = true;
-    const apply = (data: { updatedAt?: string; catalog?: any } | null) => {
+    const apply = (data: { updatedAt?: string; catalog?: any; weeklyAds?: any } | null) => {
       if (!alive || !data) return;
       setCatalog(data.catalog);
+      setWeeklyAds(data.weeklyAds);
       if (data.updatedAt) setUpdatedAt(data.updatedAt);
       setVersion((v) => v + 1);
     };
