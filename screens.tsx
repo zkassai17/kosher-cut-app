@@ -256,6 +256,45 @@ export function ListScreen() {
   const res = basketTotals(allItems, active);
   const empty = allItems.length === 0;
 
+  // Lead with items your nearby stores actually price; tuck the rest into a quiet
+  // "not sold near you" group so the list doesn't read as half-empty.
+  const pricedLines = res.lines.filter((l) => l.cheapestIdx >= 0);
+  const unpricedLines = res.lines.filter((l) => l.cheapestIdx < 0);
+  const renderLine = (ln: (typeof res.lines)[number], muted = false) => {
+    const best = ln.cheapestIdx >= 0 ? ln.prices[ln.cheapestIdx] : null;
+    const bestStore = ln.cheapestIdx >= 0 ? STORE_ABBR[active[ln.cheapestIdx]] ?? active[ln.cheapestIdx] : null;
+    const isTrip = tripKeys.has(`${ln.cat}:${ln.id}`);
+    return (
+      <View
+        key={`${ln.cat}-${ln.id}`}
+        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.line }}
+      >
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ color: muted ? t.inkSoft : t.ink, fontSize: 15, fontFamily: sansBold, flexShrink: 1 }}>{ln.label}</Text>
+            {isTrip ? (
+              <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, backgroundColor: t.goldBg }}>
+                <Text style={{ color: t.gold, fontSize: 10, fontFamily: sansBold, letterSpacing: 0.3 }}>THIS TRIP</Text>
+              </View>
+            ) : null}
+          </View>
+          {!muted ? (
+            <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 2, fontFamily: sansMed }}>
+              {best != null ? `${money(best)}${unitSuffix(ln.unit)} at ${bestStore}` : 'Not sold at these stores'}
+            </Text>
+          ) : null}
+        </View>
+        <Pressable
+          onPress={() => (isTrip ? basket.removeTemp(ln.cat, ln.id) : basket.remove(ln.cat, ln.id))}
+          hitSlop={10}
+          style={{ padding: 6 }}
+        >
+          <Text style={{ color: t.inkFaint, fontSize: 18 }}>✕</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
   return (
     <View style={s.root}>
       <FeedHeader />
@@ -350,44 +389,16 @@ export function ListScreen() {
               </View>
             ) : null}
 
-            {res.lines.map((ln) => {
-              const best = ln.cheapestIdx >= 0 ? ln.prices[ln.cheapestIdx] : null;
-              const bestStore = ln.cheapestIdx >= 0 ? STORE_ABBR[active[ln.cheapestIdx]] ?? active[ln.cheapestIdx] : null;
-              const isTrip = tripKeys.has(`${ln.cat}:${ln.id}`);
-              return (
-                <View
-                  key={`${ln.cat}-${ln.id}`}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    borderBottomWidth: 1,
-                    borderBottomColor: t.line,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansBold, flexShrink: 1 }}>{ln.label}</Text>
-                      {isTrip ? (
-                        <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, backgroundColor: t.goldBg }}>
-                          <Text style={{ color: t.gold, fontSize: 10, fontFamily: sansBold, letterSpacing: 0.3 }}>THIS TRIP</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 2, fontFamily: sansMed }}>
-                      {best != null ? `${money(best)}${unitSuffix(ln.unit)} at ${bestStore}` : 'Not sold at these stores'}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => (isTrip ? basket.removeTemp(ln.cat, ln.id) : basket.remove(ln.cat, ln.id))}
-                    hitSlop={10}
-                    style={{ padding: 6 }}
-                  >
-                    <Text style={{ color: t.inkFaint, fontSize: 18 }}>✕</Text>
-                  </Pressable>
-                </View>
-              );
-            })}
+            {pricedLines.map((ln) => renderLine(ln))}
+
+            {unpricedLines.length ? (
+              <>
+                <Text style={{ marginTop: 16, marginBottom: 4, fontSize: 13, color: t.inkFaint, fontFamily: sansSemi }}>
+                  Not sold at your nearby stores
+                </Text>
+                {unpricedLines.map((ln) => renderLine(ln, true))}
+              </>
+            ) : null}
           </View>
         )}
 
