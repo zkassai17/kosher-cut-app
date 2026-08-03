@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUI } from './ui';
 import { useLocation } from './location';
 import { useProfile } from './profile';
+import { useAuth } from './auth';
 import { useBasket } from './basket';
 import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
@@ -797,17 +798,22 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   const { origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, setAddress, reset } =
     useLocation();
   const basket = useBasket();
+  const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const [addr, setAddr] = useState('');
   const [legal, setLegal] = useState<LegalDoc | null>(null);
   const shopStores = areaStores(origin, maxMiles).filter((st) => hasCatalog(st.id));
 
-  const logout = () =>
-    Alert.alert(
-      "You're not signed in",
-      'koshercart saves your lists on this device — there’s no account to log out of yet. Sign-in & sync across devices are coming soon.',
-      [{ text: 'OK' }],
-    );
+  const logout = () => {
+    if (!user) {
+      Alert.alert("You're not signed in", 'koshercart saves your lists on this device. Sign in from the Account page to sync across devices.');
+      return;
+    }
+    Alert.alert('Log out', `Log out of ${user.email}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: () => { signOut(); onClose(); } },
+    ]);
+  };
 
   const deleteAccount = () => {
     Alert.alert(
@@ -1094,21 +1100,38 @@ export function LegalModal({ doc, onClose }: { doc: LegalDoc | null; onClose: ()
   );
 }
 
-/* Sign-in page — koshercart-styled (cream card, green accents, wordmark logo).
-   No backend yet: it validates, then explains accounts/sync are coming soon. */
+/* Sign-in / sign-up page — koshercart-styled, wired to Supabase auth (auth.tsx).
+   Until Supabase keys are added it validates then shows a "coming soon" note. */
 export function SignInModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { t } = useUI();
+  const { configured, signIn, signUp } = useAuth();
   const insets = useSafeAreaInsets();
+  const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-  const submit = () => {
+  const submit = async () => {
     if (!email || !password) return setError('Please enter both email and password.');
     if (!validEmail(email)) return setError('Please enter a valid email address.');
+    if (mode === 'up' && password.length < 6) return setError('Password must be at least 6 characters.');
     setError('');
-    Alert.alert('Thanks!', 'Accounts & syncing across devices are coming soon. Your lists are safe on this device in the meantime.');
+    if (!configured) {
+      Alert.alert('Almost there', 'Accounts & syncing are coming soon. Your lists are safe on this device in the meantime.');
+      return;
+    }
+    setBusy(true);
+    const res = mode === 'in' ? await signIn(email, password) : await signUp(email, password);
+    setBusy(false);
+    if (res.error) return setError(res.error);
+    if (res.needsConfirmation) {
+      Alert.alert('Check your email', `We sent a confirmation link to ${email.trim()}. Tap it, then come back and sign in.`);
+      setMode('in');
+      return;
+    }
+    onClose(); // signed in — session is live
   };
 
   const field = {
@@ -1155,7 +1178,7 @@ export function SignInModal({ visible, onClose }: { visible: boolean; onClose: (
               <View style={{ marginBottom: 18 }}>
                 <BrandMark size={24} />
               </View>
-              <Text style={{ color: t.ink, fontFamily: sans.xbold, fontSize: 22 }}>Sign in</Text>
+              <Text style={{ color: t.ink, fontFamily: sans.xbold, fontSize: 22 }}>{mode === 'in' ? 'Sign in' : 'Create account'}</Text>
               <Text style={{ color: t.inkSoft, fontFamily: sans.med, fontSize: 13.5, marginTop: 6, marginBottom: 22, textAlign: 'center', lineHeight: 19 }}>
                 Save your lists and regulars, and sync them across your devices.
               </Text>
@@ -1182,13 +1205,18 @@ export function SignInModal({ visible, onClose }: { visible: boolean; onClose: (
 
               <Pressable
                 onPress={submit}
-                style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center', marginTop: 18 }}
+                disabled={busy}
+                style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center', marginTop: 18, opacity: busy ? 0.7 : 1 }}
               >
-                <Text style={{ color: '#fff', fontFamily: sans.bold, fontSize: 15 }}>Sign in</Text>
+                {busy ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={{ color: '#fff', fontFamily: sans.bold, fontSize: 15 }}>{mode === 'in' ? 'Sign in' : 'Sign up'}</Text>
+                )}
               </Pressable>
 
               <Pressable
-                onPress={submit}
+                onPress={() => Alert.alert('Coming soon', 'Google sign-in is on the way. For now, use your email and a password.')}
                 style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, marginTop: 12 }}
               >
                 <Ionicons name="logo-google" size={18} color={t.ink} />
@@ -1196,8 +1224,16 @@ export function SignInModal({ visible, onClose }: { visible: boolean; onClose: (
               </Pressable>
 
               <Text style={{ color: t.inkFaint, fontSize: 12.5, marginTop: 20, fontFamily: sans.med }}>
-                Don&apos;t have an account?{' '}
-                <Text onPress={submit} style={{ color: t.brand, fontFamily: sans.bold }}>Sign up, it&apos;s free!</Text>
+                {mode === 'in' ? "Don't have an account? " : 'Already have an account? '}
+                <Text
+                  onPress={() => {
+                    setError('');
+                    setMode(mode === 'in' ? 'up' : 'in');
+                  }}
+                  style={{ color: t.brand, fontFamily: sans.bold }}
+                >
+                  {mode === 'in' ? "Sign up, it's free!" : 'Sign in'}
+                </Text>
               </Text>
             </View>
 

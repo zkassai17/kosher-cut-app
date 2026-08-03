@@ -22,6 +22,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { UIProvider, useUI } from './ui';
 import { LocationProvider } from './location';
 import { ProfileProvider } from './profile';
+import { AuthProvider } from './auth';
 import { BasketProvider } from './basket';
 import { DataProvider } from './datactx';
 import { AccountScreen, ListScreen, PricesScreen, StoresScreen } from './screens';
@@ -96,15 +97,17 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <UIProvider>
-        <DataProvider>
-          <LocationProvider>
-            <ProfileProvider>
-              <BasketProvider>
-                <Tabs />
-              </BasketProvider>
-            </ProfileProvider>
-          </LocationProvider>
-        </DataProvider>
+        <AuthProvider>
+          <DataProvider>
+            <LocationProvider>
+              <ProfileProvider>
+                <BasketProvider>
+                  <Tabs />
+                </BasketProvider>
+              </ProfileProvider>
+            </LocationProvider>
+          </DataProvider>
+        </AuthProvider>
       </UIProvider>
     </SafeAreaProvider>
   );

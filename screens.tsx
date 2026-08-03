@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUI } from './ui';
 import { useLocation } from './location';
 import { useProfile } from './profile';
+import { useAuth } from './auth';
 import { useBasket } from './basket';
 import {
   CheapestChips,
@@ -438,6 +439,7 @@ export function AccountScreen() {
   const { s, t } = useUI();
   const { origin, maxMiles } = useLocation();
   const { name } = useProfile();
+  const { user } = useAuth();
   const basket = useBasket();
   const [showAdd, setShowAdd] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -474,9 +476,9 @@ export function AccountScreen() {
           </Pressable>
         </View>
 
-        {/* Sign in to sync (accounts coming soon) */}
+        {/* Sign in to sync — reflects the real signed-in state */}
         <Pressable
-          onPress={() => setShowSignIn(true)}
+          onPress={() => (user ? setShowSettings(true) : setShowSignIn(true))}
           style={{
             marginHorizontal: 18,
             marginTop: 14,
@@ -491,11 +493,13 @@ export function AccountScreen() {
             paddingVertical: 13,
           }}
         >
-          <Ionicons name="cloud-outline" size={22} color={t.brand} />
+          <Ionicons name={user ? 'cloud-done-outline' : 'cloud-outline'} size={22} color={t.brand} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Sign in to sync</Text>
-            <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 1, fontFamily: sansMed }}>
-              Keep your lists across devices.
+            <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>
+              {user ? 'Synced' : 'Sign in to sync'}
+            </Text>
+            <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 1, fontFamily: sansMed }} numberOfLines={1}>
+              {user ? user.email : 'Keep your lists across devices.'}
             </Text>
           </View>
           <Text style={{ color: t.brand, fontSize: 20, fontFamily: sansMed }}>›</Text>
