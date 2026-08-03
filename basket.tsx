@@ -48,6 +48,7 @@ interface BasketState {
   hasRegular: (cat: string, id: string) => boolean;
   toggleRegular: (cat: string, id: string) => void;
   removeRegular: (cat: string, id: string) => void;
+  wipeAll: () => void; // delete-account: reset lists/regulars/temp back to a fresh install
 }
 
 const BasketContext = createContext<BasketState | null>(null);
@@ -169,6 +170,12 @@ export function BasketProvider({ children }: { children: ReactNode }) {
             : [...prev, { cat, id }],
         ),
       removeRegular: (cat, id) => setRegulars((prev) => prev.filter((i) => !(i.cat === cat && i.id === id))),
+      wipeAll: () => {
+        setLists(seedLists());
+        setActiveId(PRESETS[0].id);
+        setTempByList({});
+        setRegulars([]);
+      },
     };
   }, [lists, activeId, active, tempByList, regulars]);
 

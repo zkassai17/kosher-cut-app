@@ -787,15 +787,40 @@ export function LocationModal({ visible, onClose }: { visible: boolean; onClose:
    address) + the mile range. Everything here persists (name, location prefs). */
 const APP_VERSION = 'koshercart v1';
 const FEEDBACK_EMAIL = 'zkassai17@gmail.com';
+const PRIVACY_URL = 'https://zkassai17.github.io/kosher-cut-app/privacy.html';
+const TERMS_URL = 'https://zkassai17.github.io/kosher-cut-app/terms.html';
 
 export function SettingsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { s, t, themeMode, setThemeMode } = useUI();
   const { name, setName } = useProfile();
-  const { origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, setAddress } =
+  const { origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, setAddress, reset } =
     useLocation();
+  const basket = useBasket();
   const insets = useSafeAreaInsets();
   const [addr, setAddr] = useState('');
   const shopStores = areaStores(origin, maxMiles).filter((st) => hasCatalog(st.id));
+
+  const deleteAccount = () => {
+    Alert.alert(
+      'Delete account',
+      'This permanently removes your lists, regulars, name, and settings from this device. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete everything',
+          style: 'destructive',
+          onPress: () => {
+            basket.wipeAll();
+            reset();
+            setName('');
+            setThemeMode('auto');
+            onClose();
+            Alert.alert('Account deleted', 'Your data has been removed from this device.');
+          },
+        },
+      ],
+    );
+  };
 
   const submitAddr = async () => {
     if (!addr.trim()) return;
@@ -985,8 +1010,34 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
                 <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med }}>⭐  Tell a friend</Text>
                 <Text style={{ color: t.inkFaint, fontSize: 20 }}>›</Text>
               </Pressable>
+              <Pressable
+                onPress={() => Linking.openURL(PRIVACY_URL)}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 14, borderTopWidth: 1, borderTopColor: t.line }}
+              >
+                <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med }}>🔒  Privacy Policy</Text>
+                <Text style={{ color: t.inkFaint, fontSize: 20 }}>›</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => Linking.openURL(TERMS_URL)}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 14, borderTopWidth: 1, borderTopColor: t.line }}
+              >
+                <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.med }}>📄  Terms of Use</Text>
+                <Text style={{ color: t.inkFaint, fontSize: 20 }}>›</Text>
+              </Pressable>
             </View>
-            <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 18, fontFamily: sans.med }}>
+
+            <Text style={sectionLabel}>ACCOUNT</Text>
+            <Pressable
+              onPress={deleteAccount}
+              style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 15 }}
+            >
+              <Text style={{ color: t.oxblood, fontSize: 15, fontFamily: sans.bold }}>Delete account</Text>
+              <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 3, fontFamily: sans.med }}>
+                Erase your lists, regulars, name and settings from this device.
+              </Text>
+            </Pressable>
+
+            <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 22, fontFamily: sans.med }}>
               {APP_VERSION} · made in NJ
             </Text>
           </ScrollView>

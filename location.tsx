@@ -16,6 +16,7 @@ interface LocationState {
   toggleStore: (id: string) => void;
   useMyLocation: () => Promise<void>;
   setAddress: (addr: string) => Promise<boolean>;
+  reset: () => void; // delete-account: back to default area, 15 mi, no hidden stores
 }
 
 // Nearest area to a lat/lng — used so a typed address / GPS still gets a clean
@@ -110,6 +111,14 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const reset = useCallback(() => {
+    setOrigin(defaultOrigin);
+    setMaxMiles(15);
+    setAutoLocateState(false);
+    setHiddenState([]);
+    setHiddenStores([]);
+  }, []);
+
   const setArea = useCallback((a: Area) => {
     setAutoLocateState(false); // choosing a fixed area turns off auto-locate
     setOrigin({ label: a.label, lat: a.lat, lng: a.lng, source: 'area', areaId: a.id });
@@ -146,8 +155,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<LocationState>(
-    () => ({ origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, useMyLocation: runGps, setAddress }),
-    [origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setAutoLocate, toggleStore, runGps, setAddress],
+    () => ({ origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, useMyLocation: runGps, setAddress, reset }),
+    [origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setAutoLocate, toggleStore, runGps, setAddress, reset],
   );
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;
