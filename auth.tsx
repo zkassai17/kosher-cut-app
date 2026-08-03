@@ -108,10 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       deleteAccount: async () => {
         if (!supabase) return {};
-        // Best-effort: the Edge Function removes the auth user + their cloud data.
-        // If it isn't deployed yet, we still sign out so local data can be wiped.
+        // Best-effort: this Edge Function removes the auth user + their cloud data.
+        // It was deployed under Supabase's default slug "dynamic-function" (the slug
+        // can't be renamed after creation), so we invoke that name.
+        // If it isn't reachable, we still sign out so local data can be wiped.
         try {
-          await supabase.functions.invoke('delete-user');
+          await supabase.functions.invoke('dynamic-function');
         } catch {}
         await supabase.auth.signOut();
         return {};
