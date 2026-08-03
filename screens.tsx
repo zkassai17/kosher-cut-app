@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUI } from './ui';
@@ -467,12 +468,8 @@ export function AccountScreen() {
               {basket.lists.length} lists · {totalItems} items saved
             </Text>
           </View>
-          <Pressable
-            onPress={() => setShowSettings(true)}
-            hitSlop={10}
-            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={{ fontSize: 18 }}>⚙️</Text>
+          <Pressable onPress={() => setShowSettings(true)} hitSlop={12} style={{ padding: 4 }}>
+            <Ionicons name="settings-outline" size={24} color={t.inkSoft} />
           </Pressable>
         </View>
 
