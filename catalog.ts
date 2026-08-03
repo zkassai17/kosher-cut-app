@@ -180,6 +180,12 @@ export interface CatalogHit {
   prices: { storeId: string; price: number }[]; // stores that carry it, cheapest first
 }
 
+// Catering/bulk items (full trays, platters, boards, whole cakes) are priced
+// correctly but wildly larger than normal groceries — a $240 tray next to a $5
+// item makes comparisons look broken. Hide them from search. (~0.9% of the catalog,
+// no normal grocery matches.)
+const CATERING = /\b(full|half|quarter)\s*trays?\b|\bplatters?\b|\bdeluxe board\b|\b(full|whole)\s+cake\b|\bcatering\b|\bparty (platter|pack|tray)\b/i;
+
 // Search the catalog across the given stores. Products with the same normalized
 // name at multiple stores are grouped into one comparable row.
 export function searchCatalog(query: string, storeIds: string[], limit = 40): CatalogHit[] {
@@ -191,6 +197,7 @@ export function searchCatalog(query: string, storeIds: string[], limit = 40): Ca
   for (const sid of storeIds) {
     for (const prod of CATALOG[sid] ?? []) {
       if (prod.p == null) continue;
+      if (CATERING.test(prod.n)) continue; // hide catering trays/platters from comparisons
       const nn = norm(prod.n);
       if (!terms.every((t) => termMatches(t, nn))) continue;
       const key = keyOfProduct(prod) || nn;
