@@ -1102,7 +1102,7 @@ export function LegalModal({ doc, onClose }: { doc: LegalDoc | null; onClose: ()
 
 /* Sign-in / sign-up page — koshercart-styled, wired to Supabase auth (auth.tsx).
    Until Supabase keys are added it validates then shows a "coming soon" note. */
-export function SignInModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function SignInModal({ visible, onClose, gate }: { visible: boolean; onClose: () => void; gate?: boolean }) {
   const { t } = useUI();
   const { configured, signIn, signUp, signInWithGoogle } = useAuth();
   const insets = useSafeAreaInsets();
@@ -1163,9 +1163,13 @@ export function SignInModal({ visible, onClose }: { visible: boolean; onClose: (
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: t.paper, paddingTop: insets.top + 6 }}>
-        <Pressable onPress={onClose} hitSlop={12} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 6 }}>
-          <Ionicons name="close" size={26} color={t.inkSoft} />
-        </Pressable>
+        {gate ? (
+          <View style={{ height: 38 }} />
+        ) : (
+          <Pressable onPress={onClose} hitSlop={12} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 6 }}>
+            <Ionicons name="close" size={26} color={t.inkSoft} />
+          </Pressable>
+        )}
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView
             keyboardShouldPersistTaps="handled"

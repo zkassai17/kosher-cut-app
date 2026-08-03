@@ -1,4 +1,4 @@
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -22,9 +22,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { UIProvider, useUI } from './ui';
 import { LocationProvider } from './location';
 import { ProfileProvider } from './profile';
-import { AuthProvider } from './auth';
+import { AuthProvider, useAuth } from './auth';
 import { BasketProvider } from './basket';
 import { DataProvider } from './datactx';
+import { SignInModal } from './components';
 import { AccountScreen, ListScreen, PricesScreen, StoresScreen } from './screens';
 
 const Tab = createBottomTabNavigator();
@@ -80,6 +81,21 @@ function Tabs() {
   );
 }
 
+// Requires sign-in when accounts are configured: an un-dismissable sign-in page
+// covers the app until you're signed in. Signing out makes it reappear. When
+// Supabase isn't configured yet, there's nothing to sign into, so the app is open.
+function Gate() {
+  const { configured, loading, user } = useAuth();
+  const { t } = useUI();
+  if (configured && loading) return <View style={{ flex: 1, backgroundColor: t.paper }} />; // brief splash while restoring session
+  return (
+    <>
+      <Tabs />
+      {configured && !user ? <SignInModal visible onClose={() => {}} gate /> : null}
+    </>
+  );
+}
+
 export default function App() {
   const [loaded] = useFonts({
     Manrope_400Regular,
@@ -102,7 +118,7 @@ export default function App() {
             <LocationProvider>
               <ProfileProvider>
                 <BasketProvider>
-                  <Tabs />
+                  <Gate />
                 </BasketProvider>
               </ProfileProvider>
             </LocationProvider>
