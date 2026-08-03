@@ -1104,7 +1104,7 @@ export function LegalModal({ doc, onClose }: { doc: LegalDoc | null; onClose: ()
    Until Supabase keys are added it validates then shows a "coming soon" note. */
 export function SignInModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { t } = useUI();
-  const { configured, signIn, signUp } = useAuth();
+  const { configured, signIn, signUp, signInWithGoogle } = useAuth();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
@@ -1132,6 +1132,19 @@ export function SignInModal({ visible, onClose }: { visible: boolean; onClose: (
       return;
     }
     onClose(); // signed in — session is live
+  };
+
+  const google = async () => {
+    setError('');
+    if (!configured) {
+      Alert.alert('Almost there', 'Google sign-in turns on once accounts are configured.');
+      return;
+    }
+    setBusy(true);
+    const res = await signInWithGoogle();
+    setBusy(false);
+    if (res.error) return setError(res.error);
+    onClose();
   };
 
   const field = {
@@ -1216,8 +1229,9 @@ export function SignInModal({ visible, onClose }: { visible: boolean; onClose: (
               </Pressable>
 
               <Pressable
-                onPress={() => Alert.alert('Coming soon', 'Google sign-in is on the way. For now, use your email and a password.')}
-                style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, marginTop: 12 }}
+                onPress={google}
+                disabled={busy}
+                style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, marginTop: 12, opacity: busy ? 0.7 : 1 }}
               >
                 <Ionicons name="logo-google" size={18} color={t.ink} />
                 <Text style={{ color: t.ink, fontFamily: sans.semi, fontSize: 15 }}>Continue with Google</Text>

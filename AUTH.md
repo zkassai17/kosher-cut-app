@@ -27,13 +27,32 @@ That's it — sessions persist across app restarts automatically.
 - **Log out** (Settings → ACCOUNT) and **Delete account** (local data)
 - The Account banner shows "Synced · your@email" when signed in
 
-## Not yet wired (easy follow-ups)
+## Turning on "Continue with Google"
 
-- **Continue with Google** — shows "coming soon"; needs a Google OAuth client +
-  `expo-auth-session` redirect setup.
-- **Syncing your lists to the cloud** — right now auth is in place but lists still
-  live only on the device. Next step: a `lists` table with Row Level Security keyed
-  to `auth.uid()`, and push/pull on sign-in. Ask and I'll build it.
+The button is wired (opens a Google sign-in browser and sets the session). It needs
+a Google OAuth client + the provider enabled in Supabase:
+
+1. **Google Cloud Console** (<https://console.cloud.google.com>) → APIs & Services →
+   **Credentials** → **Create credentials → OAuth client ID** → **Web application**.
+   - Under **Authorized redirect URIs** add:
+     `https://YOURPROJECT.supabase.co/auth/v1/callback`
+   - Create it, copy the **Client ID** and **Client secret**.
+2. **Supabase** → Authentication → **Providers → Google** → enable, paste the Client
+   ID + secret, save.
+3. **Supabase** → Authentication → **URL Configuration → Redirect URLs** → add the
+   app's redirect so Supabase will hand the session back:
+   - `koshercart://` (for a dev/production build — the app scheme)
+   - In **Expo Go** the redirect is `exp://<your-ip>:8090/--/` and changes with your
+     IP, so Google sign-in is easiest to test in a real EAS **dev build**. Email/password
+     works fine in Expo Go.
+
+That's it — tap "Continue with Google" and it opens Google, then drops you back signed in.
+
+## Not yet wired (follow-up)
+
+- **Syncing your lists to the cloud** — auth is in place but lists still live only on
+  the device. Next step: a `lists` table with Row Level Security keyed to `auth.uid()`,
+  and push/pull on sign-in. Ask and I'll build it.
 
 ## Deleting a real account
 

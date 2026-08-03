@@ -4,8 +4,25 @@
 
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 
 import { supabase, authConfigured } from './supabase';
+
+// Finish any auth session that was pending when the app was backgrounded.
+WebBrowser.maybeCompleteAuthSession();
+
+// Pull Supabase's returned tokens out of the redirect URL (they come back in the
+// fragment on native). URLSearchParams is available via the url polyfill.
+function tokensFromUrl(url: string): { access_token?: string; refresh_token?: string; error?: string } {
+  const hash = url.includes('#') ? url.split('#')[1] : url.split('?')[1] ?? '';
+  const p = new URLSearchParams(hash);
+  return {
+    access_token: p.get('access_token') ?? undefined,
+    refresh_token: p.get('refresh_token') ?? undefined,
+    error: p.get('error_description') ?? p.get('error') ?? undefined,
+  };
+}
 
 interface AuthResult {
   error?: string;
@@ -19,6 +36,7 @@ interface AuthState {
   user: User | null;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (email: string, password: string) => Promise<AuthResult>;
+  signInWithGoogle: () => Promise<AuthResult>;
   signOut: () => Promise<void>;
 }
 
@@ -62,6 +80,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
         if (error) return { error: error.message };
         return { needsConfirmation: !data.session }; // no session back = must confirm via email
+      },
+      signInWithGoogle: async () => {
+        if (!supabase) return { error: 'Accounts aren’t set up yet.' };
+        try {
+          const redirectTo = makeRedirectUri();
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo, skipBrowserRedirect: true },
+          });
+          if (error) return { error: error.message };
+          if (!data?.url) return { error: 'Could not start Google sign-in.' };
+          const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+          if (result.type !== 'success') return {}; // user closed the browser — not an error
+          const { access_token, refresh_token, error: urlErr } = tokensFromUrl(result.url);
+          if (urlErr) return { error: urlErr };
+          if (!access_token || !refresh_token) return { error: 'Google sign-in did not return a session.' };
+          const { error: setErr } = await supabase.auth.setSession({ access_token, refresh_token });
+          return { error: setErr?.message };
+        } catch (e) {
+          return { error: e instanceof Error ? e.message : 'Google sign-in failed.' };
+        }
       },
       signOut: async () => {
         await supabase?.auth.signOut();
