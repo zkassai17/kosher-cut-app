@@ -37,11 +37,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
-          # Canonicalize at most this many NEW product names per run, so a new
-          # account's low AI rate limits can never blow the job timeout. Cached
-          # results carry over, so the full catalog fills in across a few daily
-          # runs; the app uses its regex matcher for anything not tagged yet.
-          CANON_MAX_NEW: ${{ vars.CANON_MAX_NEW || '15000' }}
+          # Cap NEW product names canonicalized per run (safety valve). Proven that
+          # ~46k fits well within the 90-min budget, so default high; lower via the
+          # CANON_MAX_NEW repo variable if a run ever gets tight. Cache carries over.
+          CANON_MAX_NEW: ${{ vars.CANON_MAX_NEW || '60000' }}
         run: node catalog.mjs
 
       - name: Commit refreshed prices
@@ -49,5 +48,8 @@ jobs:
           git config user.name "kosher-cut-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data.json scraper/catalog.json scraper/canon-cache.json scraper/cedar-cache.json
-          git commit -m "Daily price refresh $(date -u +%Y-%m-%d)" || echo "No changes today"
+          git commit -m "Daily price refresh $(date -u +%Y-%m-%d)" || { echo "No changes"; exit 0; }
+          # Integrate anything pushed to main while the run was going (e.g. app-code
+          # commits), then push — so a concurrent push never rejects the daily data.
+          git pull --rebase origin main
           git push
