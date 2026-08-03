@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   TextInput,
   View,
@@ -18,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUI } from './ui';
 import { useLocation } from './location';
+import { useProfile } from './profile';
 import { useBasket } from './basket';
 import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
@@ -775,6 +777,154 @@ export function LocationModal({ visible, onClose }: { visible: boolean; onClose:
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+/* Account → Settings: name, and how location is decided (auto GPS vs a set area/
+   address) + the mile range. Everything here persists (name, location prefs). */
+export function SettingsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { s, t } = useUI();
+  const { name, setName } = useProfile();
+  const { origin, maxMiles, autoLocate, gpsStatus, setArea, setMaxMiles, setAutoLocate, setAddress } = useLocation();
+  const insets = useSafeAreaInsets();
+  const [addr, setAddr] = useState('');
+
+  const submitAddr = async () => {
+    if (!addr.trim()) return;
+    const ok = await setAddress(addr);
+    if (ok) setAddr('');
+  };
+
+  const sectionLabel = { color: t.inkFaint, fontSize: 13, fontFamily: sans.bold, letterSpacing: 0.4, marginTop: 24, marginBottom: 10 } as const;
+  const field = {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: t.line,
+    backgroundColor: t.surface2,
+    paddingHorizontal: 14,
+    color: t.ink,
+    fontSize: 15,
+    fontFamily: sans.med,
+  } as const;
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={[s.root, { paddingTop: insets.top + 8 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}>
+          <Text style={s.h1clean}>Settings</Text>
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            style={{ paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, color: '#fff', fontFamily: sans.bold }}>Done</Text>
+          </Pressable>
+        </View>
+
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: insets.bottom + 40 }}
+          >
+            <Text style={sectionLabel}>YOUR NAME</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Add your name"
+              placeholderTextColor={t.inkFaint}
+              style={field}
+              returnKeyType="done"
+            />
+
+            <Text style={sectionLabel}>LOCATION</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                backgroundColor: t.surface,
+                borderWidth: 1,
+                borderColor: t.line,
+                borderRadius: 14,
+                padding: 14,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.semi }}>Use my location automatically</Text>
+                <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 2, fontFamily: sans.med }}>
+                  Show stores near wherever you are.
+                </Text>
+              </View>
+              <Switch
+                value={autoLocate}
+                onValueChange={setAutoLocate}
+                trackColor={{ true: t.brand, false: t.lineStrong }}
+                thumbColor="#fff"
+              />
+            </View>
+            {autoLocate && gpsStatus === 'error' ? (
+              <Text style={{ color: t.oxblood, fontSize: 12.5, marginTop: 8, fontFamily: sans.med }}>
+                Couldn't get your location — turn this off to set an area instead, or check location permissions.
+              </Text>
+            ) : null}
+
+            {!autoLocate ? (
+              <>
+                <Text style={{ color: t.inkSoft, fontSize: 13, marginTop: 16, marginBottom: 8, fontFamily: sans.semi }}>
+                  Or set a location
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                  <TextInput
+                    value={addr}
+                    onChangeText={setAddr}
+                    placeholder="Enter your address or zip"
+                    placeholderTextColor={t.inkFaint}
+                    returnKeyType="search"
+                    onSubmitEditing={submitAddr}
+                    style={[field, { flex: 1 }]}
+                  />
+                  <Pressable
+                    onPress={submitAddr}
+                    disabled={gpsStatus === 'loading'}
+                    style={{ paddingHorizontal: 18, height: 48, borderRadius: 12, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {gpsStatus === 'loading' ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontFamily: sans.bold, fontSize: 14 }}>Find</Text>}
+                  </Pressable>
+                </View>
+                <View style={s.pickRow}>
+                  {AREAS.map((a) => {
+                    const on = origin.source === 'area' && origin.label === a.label;
+                    return (
+                      <Pressable key={a.id} style={[s.pick, on && s.pickActive]} onPress={() => setArea(a)}>
+                        <Text style={[s.pickText, on && s.pickTextActive]}>{a.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+
+            <View style={s.sliderRow}>
+              <Text style={s.sliderLabel}>How far will you go?</Text>
+              <Text style={s.sliderValue}>{maxMiles} mi</Text>
+            </View>
+            <Slider
+              minimumValue={2}
+              maximumValue={50}
+              step={1}
+              value={maxMiles}
+              onValueChange={setMaxMiles}
+              minimumTrackTintColor={t.brand}
+              maximumTrackTintColor={t.line}
+              thumbTintColor={t.brand}
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

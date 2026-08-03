@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUI } from './ui';
 import { useLocation } from './location';
+import { useProfile } from './profile';
 import { useBasket } from './basket';
 import {
   CheapestChips,
@@ -13,6 +14,7 @@ import {
   ListPicker,
   PillTabs,
   SearchBar,
+  SettingsModal,
   StoreCard2,
 } from './components';
 import {
@@ -432,11 +434,13 @@ export function ListScreen() {
 /* ---------- Account: personal home + a tappable list of your lists ---------- */
 export function AccountScreen() {
   const { s, t } = useUI();
-  const { origin, maxMiles } = useLocation();
+  const { origin, maxMiles, autoLocate } = useLocation();
+  const { name } = useProfile();
   const basket = useBasket();
   const [showAdd, setShowAdd] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   const totalItems = basket.lists.reduce((n, l) => n + l.items.length, 0);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
@@ -470,7 +474,7 @@ export function AccountScreen() {
             <Text style={{ fontSize: 26 }}>👋</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.h1clean}>Your account</Text>
+            <Text style={s.h1clean} numberOfLines={1}>{name ? `Hi, ${name}` : 'Your account'}</Text>
             <Text style={{ color: t.inkSoft, fontSize: 13, marginTop: 2, fontFamily: sansMed }}>
               {basket.lists.length} lists · {totalItems} items saved
             </Text>
@@ -602,10 +606,24 @@ export function AccountScreen() {
         {/* Settings — makes it feel like an account */}
         <Text style={s.listHint}>SETTINGS</Text>
         <View style={{ paddingHorizontal: 18, gap: 10 }}>
-          <View style={settingRow}>
+          <Pressable style={settingRow} onPress={() => setShowSettings(true)}>
+            <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansMed }}>🙂  Name</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+              <Text style={{ color: name ? t.inkSoft : t.inkFaint, fontSize: 14, fontFamily: sansSemi }} numberOfLines={1}>
+                {name || 'Add your name'}
+              </Text>
+              <Text style={{ color: t.inkFaint, fontSize: 20, fontFamily: sansMed }}>›</Text>
+            </View>
+          </Pressable>
+          <Pressable style={settingRow} onPress={() => setShowSettings(true)}>
             <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansMed }}>📍  Location</Text>
-            <Text style={{ color: t.inkSoft, fontSize: 14, fontFamily: sansSemi }}>{origin.label}</Text>
-          </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+              <Text style={{ color: t.inkSoft, fontSize: 14, fontFamily: sansSemi }} numberOfLines={1}>
+                {autoLocate ? 'Automatic' : origin.label} · {maxMiles} mi
+              </Text>
+              <Text style={{ color: t.inkFaint, fontSize: 20, fontFamily: sansMed }}>›</Text>
+            </View>
+          </Pressable>
           <View style={settingRow}>
             <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansMed }}>☁️  Sync across devices</Text>
             <Text style={{ color: t.inkFaint, fontSize: 13, fontFamily: sansSemi }}>Coming soon</Text>
@@ -628,6 +646,7 @@ export function AccountScreen() {
         }}
       />
       <AddItemsModal visible={showRegAdd} onClose={() => setShowRegAdd(false)} storeIds={active} regular />
+      <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)} />
     </View>
   );
 }
