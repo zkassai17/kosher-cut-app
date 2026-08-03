@@ -16,6 +16,7 @@ import {
   PillTabs,
   SearchBar,
   SettingsModal,
+  SignInModal,
   StoreCard2,
 } from './components';
 import {
@@ -442,6 +443,7 @@ export function AccountScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
 
@@ -471,6 +473,33 @@ export function AccountScreen() {
             <Ionicons name="settings-outline" size={24} color={t.inkSoft} />
           </Pressable>
         </View>
+
+        {/* Sign in to sync (accounts coming soon) */}
+        <Pressable
+          onPress={() => setShowSignIn(true)}
+          style={{
+            marginHorizontal: 18,
+            marginTop: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            backgroundColor: t.brandSoft,
+            borderWidth: 1,
+            borderColor: t.brand,
+            borderRadius: 14,
+            paddingHorizontal: 15,
+            paddingVertical: 13,
+          }}
+        >
+          <Ionicons name="cloud-outline" size={22} color={t.brand} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Sign in to sync</Text>
+            <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 1, fontFamily: sansMed }}>
+              Keep your lists across devices.
+            </Text>
+          </View>
+          <Text style={{ color: t.brand, fontSize: 20, fontFamily: sansMed }}>›</Text>
+        </Pressable>
 
         {/* My Regulars — the products you always buy, watched for the best price */}
         <Text style={s.listHint}>MY REGULARS</Text>
@@ -611,6 +640,7 @@ export function AccountScreen() {
       />
       <AddItemsModal visible={showRegAdd} onClose={() => setShowRegAdd(false)} storeIds={active} regular />
       <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)} />
+      <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
     </View>
   );
 }

@@ -1094,6 +1094,123 @@ export function LegalModal({ doc, onClose }: { doc: LegalDoc | null; onClose: ()
   );
 }
 
+/* Sign-in page — koshercart-styled (cream card, green accents, wordmark logo).
+   No backend yet: it validates, then explains accounts/sync are coming soon. */
+export function SignInModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { t } = useUI();
+  const insets = useSafeAreaInsets();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const submit = () => {
+    if (!email || !password) return setError('Please enter both email and password.');
+    if (!validEmail(email)) return setError('Please enter a valid email address.');
+    setError('');
+    Alert.alert('Thanks!', 'Accounts & syncing across devices are coming soon. Your lists are safe on this device in the meantime.');
+  };
+
+  const field = {
+    width: '100%' as const,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: t.line,
+    backgroundColor: t.surface2,
+    paddingHorizontal: 16,
+    color: t.ink,
+    fontSize: 15,
+    fontFamily: sans.med,
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: t.paper, paddingTop: insets.top + 6 }}>
+        <Pressable onPress={onClose} hitSlop={12} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 6 }}>
+          <Ionicons name="close" size={26} color={t.inkSoft} />
+        </Pressable>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingBottom: 40 }}
+          >
+            <View
+              style={{
+                backgroundColor: t.surface,
+                borderWidth: 1,
+                borderColor: t.line,
+                borderRadius: 26,
+                paddingVertical: 30,
+                paddingHorizontal: 24,
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOpacity: 0.06,
+                shadowRadius: 18,
+                shadowOffset: { width: 0, height: 8 },
+              }}
+            >
+              {/* Logo */}
+              <View style={{ marginBottom: 18 }}>
+                <BrandMark size={24} />
+              </View>
+              <Text style={{ color: t.ink, fontFamily: sans.xbold, fontSize: 22 }}>Sign in</Text>
+              <Text style={{ color: t.inkSoft, fontFamily: sans.med, fontSize: 13.5, marginTop: 6, marginBottom: 22, textAlign: 'center', lineHeight: 19 }}>
+                Save your lists and regulars, and sync them across your devices.
+              </Text>
+
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor={t.inkFaint}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={field}
+              />
+              <View style={{ height: 12 }} />
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor={t.inkFaint}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={field}
+              />
+              {error ? <Text style={{ color: t.oxblood, fontSize: 13, fontFamily: sans.med, alignSelf: 'flex-start', marginTop: 10 }}>{error}</Text> : null}
+
+              <Pressable
+                onPress={submit}
+                style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center', marginTop: 18 }}
+              >
+                <Text style={{ color: '#fff', fontFamily: sans.bold, fontSize: 15 }}>Sign in</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={submit}
+                style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, marginTop: 12 }}
+              >
+                <Ionicons name="logo-google" size={18} color={t.ink} />
+                <Text style={{ color: t.ink, fontFamily: sans.semi, fontSize: 15 }}>Continue with Google</Text>
+              </Pressable>
+
+              <Text style={{ color: t.inkFaint, fontSize: 12.5, marginTop: 20, fontFamily: sans.med }}>
+                Don&apos;t have an account?{' '}
+                <Text onPress={submit} style={{ color: t.brand, fontFamily: sans.bold }}>Sign up, it&apos;s free!</Text>
+              </Text>
+            </View>
+
+            <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 22, lineHeight: 18, fontFamily: sans.med }}>
+              Join Jewish shoppers across NJ &amp; NY finding the cheapest kosher groceries every week.
+            </Text>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
 // Pill toggle (Uber-style chips) — used on the Compare tab for Chicken/Beef.
 export function PillTabs({
   value,
