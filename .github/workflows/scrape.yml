@@ -11,7 +11,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90 # crawl (~37m) + first-time AI canonicalization needs headroom
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +37,11 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
+          # Canonicalize at most this many NEW product names per run, so a new
+          # account's low AI rate limits can never blow the job timeout. Cached
+          # results carry over, so the full catalog fills in across a few daily
+          # runs; the app uses its regex matcher for anything not tagged yet.
+          CANON_MAX_NEW: ${{ vars.CANON_MAX_NEW || '15000' }}
         run: node catalog.mjs
 
       - name: Commit refreshed prices
