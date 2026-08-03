@@ -13,7 +13,7 @@
 // shows a "coming soon" message instead of erroring.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_URL = 'https://hgfgujtusngurhlujldp.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_X0pTw8ZHdupRq1p0FbYZ2g_iUMS1DnY';
 
 export const authConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
