@@ -86,18 +86,46 @@ export function PricesScreen() {
           </View>
         ) : null}
 
-        {blocks.map((b) => (
-          <View key={b.cat.key}>
-            <Text style={s.listHint}>
-              {b.cat.label} · {b.ids.map((id) => STORE_ABBR[id] ?? id).join(' vs ')}
-            </Text>
-            <View style={{ paddingHorizontal: 18 }}>
-              {b.rows.map((r) => (
-                <CompareRow key={`${r.cat}-${r.id}`} item={r.item} unit={r.unit} storeIds={b.ids} prices={r.prices} />
-              ))}
+        {blocks.map((b) => {
+          // With 2+ stores, lead with real head-to-heads; tuck items only one store
+          // carries into a quiet "Only at one store" group (no wall of dashes).
+          const priced = (r: (typeof b.rows)[number]) => r.prices.filter((p) => p != null).length;
+          const split = b.ids.length >= 2;
+          const cmp = split ? b.rows.filter((r) => priced(r) >= 2) : b.rows;
+          const solo = split ? b.rows.filter((r) => priced(r) < 2) : [];
+          return (
+            <View key={b.cat.key}>
+              <Text style={s.listHint}>
+                {b.cat.label} · {b.ids.map((id) => STORE_ABBR[id] ?? id).join(' vs ')}
+              </Text>
+              <View style={{ paddingHorizontal: 18 }}>
+                {cmp.map((r) => (
+                  <CompareRow key={`${r.cat}-${r.id}`} item={r.item} unit={r.unit} storeIds={b.ids} prices={r.prices} />
+                ))}
+              </View>
+              {solo.length ? (
+                <>
+                  <Text style={[s.listHint, { marginTop: 12 }]}>Only at one store</Text>
+                  <View style={{ paddingHorizontal: 18 }}>
+                    {solo.map((r) => {
+                      const i = r.prices.findIndex((p) => p != null);
+                      return (
+                        <CompareRow
+                          key={`${r.cat}-${r.id}`}
+                          item={r.item}
+                          unit={r.unit}
+                          storeIds={[b.ids[i]]}
+                          prices={[r.prices[i]]}
+                          soloClean
+                        />
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
             </View>
-          </View>
-        ))}
+          );
+        })}
 
         {query && cmpHits.length ? (
           <>
