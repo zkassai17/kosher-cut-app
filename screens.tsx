@@ -417,7 +417,7 @@ export function ListScreen() {
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         <View
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, paddingHorizontal: 18, paddingTop: 6 }}
         >
           <ListPicker />
           <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
