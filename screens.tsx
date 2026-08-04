@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUI } from './ui';
@@ -541,12 +540,10 @@ export function AccountScreen() {
   const { name } = useProfile();
   const basket = useBasket();
   const { user, configured } = useAuth();
-  const navigation = useNavigation<any>();
-  const [showAdd, setShowAdd] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
 
@@ -563,20 +560,11 @@ export function AccountScreen() {
   }, 0);
   const initial = (name?.trim()?.[0] ?? '').toUpperCase();
 
-  // Tapping a list's body opens the full List page (shop view, quantities, check-off).
+  // Tapping a list opens its editor right here on Account — see the items, change
+  // quantities, remove, or add more. (Shopping the list lives on the List tab.)
   const openList = (id: string) => {
     basket.setActive(id);
-    navigation.navigate('List');
-  };
-  // The "+ Add" pill on a card adds/edits items right here on Account.
-  const editList = (id: string) => {
-    basket.setActive(id);
-    setShowAdd(true);
-  };
-  // The ⋯ on a card manages the list (rename, emoji, reset/delete, uncheck all).
-  const openOptions = (id: string) => {
-    basket.setActive(id);
-    setShowOptions(true);
+    setShowEditor(true);
   };
 
   return (
@@ -733,30 +721,7 @@ export function AccountScreen() {
                     )}
                   </Text>
                 </View>
-                {/* Add/edit items right here on Account (tapping the card body opens
-                    the full List page). Inner Pressable captures the tap, so this
-                    never also fires the card's navigation. */}
-                <Pressable
-                  onPress={() => editList(l.id)}
-                  hitSlop={8}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                    paddingHorizontal: 11,
-                    height: 32,
-                    borderRadius: 16,
-                    backgroundColor: t.brandSoft,
-                    borderWidth: 1,
-                    borderColor: t.brand,
-                  }}
-                >
-                  <Text style={{ color: t.brand, fontSize: 15, fontFamily: sansBold, marginTop: -2 }}>+</Text>
-                  <Text style={{ color: t.brand, fontSize: 13, fontFamily: sansBold }}>Add</Text>
-                </Pressable>
-                <Pressable onPress={() => openOptions(l.id)} hitSlop={8} style={{ padding: 4 }}>
-                  <Ionicons name="ellipsis-horizontal" size={20} color={t.inkFaint} />
-                </Pressable>
+                <Text style={{ color: t.inkFaint, fontSize: 24, fontFamily: sansMed }}>›</Text>
               </Pressable>
             );
           })}
@@ -780,19 +745,144 @@ export function AccountScreen() {
           </Text>
         )}
       </ScrollView>
-      <AddItemsModal visible={showAdd} onClose={() => setShowAdd(false)} storeIds={active} />
+      <ListEditorModal visible={showEditor} onClose={() => setShowEditor(false)} storeIds={active} />
       <CreateListModal
         visible={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={() => {
           setShowCreate(false);
-          setShowAdd(true); // jump straight into adding items to the new list
+          setShowEditor(true); // open the new list's editor to build it
         }}
       />
       <AddItemsModal visible={showRegAdd} onClose={() => setShowRegAdd(false)} storeIds={active} regular />
-      <ListOptionsSheet visible={showOptions} onClose={() => setShowOptions(false)} />
       <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)} />
     </View>
+  );
+}
+
+/* Account → tap a list → edit it here: see the items, change quantities, remove,
+   or add more. This is the ONE place to edit what's saved on a list. No "just for
+   this trip" here — that's a shopping action, so it lives only on the List tab. */
+export function ListEditorModal({
+  visible,
+  onClose,
+  storeIds,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  storeIds: string[];
+}) {
+  const { s, t } = useUI();
+  const basket = useBasket();
+  const insets = useSafeAreaInsets();
+  const [showAdd, setShowAdd] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const res = basketTotals(basket.items, storeIds); // the active list's saved items
+  const empty = basket.items.length === 0;
+
+  const stepBtn = {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: t.line,
+    backgroundColor: t.surface,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={[s.root, { paddingTop: insets.top + 8 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}>
+          <Text style={[s.h1clean, { flexShrink: 1, marginRight: 12 }]} numberOfLines={1}>
+            {basket.active.emoji} {basket.active.label}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Pressable
+              onPress={() => setShowOptions(true)}
+              hitSlop={8}
+              style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={18} color={t.inkSoft} />
+            </Pressable>
+            <Pressable
+              onPress={onClose}
+              hitSlop={10}
+              style={{ paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 14, color: '#fff', fontFamily: sansBold }}>Done</Text>
+            </Pressable>
+          </View>
+        </View>
+        <Text style={s.listHint}>Your list — change quantities, remove, or add more.</Text>
+
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 30, paddingTop: 2 }}>
+          {empty ? (
+            <Text style={s.emptyLine}>No items yet — tap “+ Add items” below.</Text>
+          ) : (
+            <View style={{ paddingHorizontal: 18 }}>
+              {res.lines.map((ln) => {
+                const best = ln.cheapestIdx >= 0 ? ln.prices[ln.cheapestIdx] : null;
+                const bestStore = ln.cheapestIdx >= 0 ? STORE_ABBR[storeIds[ln.cheapestIdx]] ?? storeIds[ln.cheapestIdx] : null;
+                return (
+                  <View
+                    key={`${ln.cat}-${ln.id}`}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: t.line }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={2} style={{ color: t.ink, fontSize: 15, fontFamily: sansBold }}>
+                        {cleanName(ln.label)}
+                      </Text>
+                      <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 2, fontFamily: sansMed }}>
+                        {best != null
+                          ? `${money(best)}${unitSuffix(ln.unit)} at ${bestStore}${ln.qty > 1 ? `  ·  ${ln.qty} = ${money(best * ln.qty)}` : ''}`
+                          : 'Not sold at these stores'}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                      <Pressable onPress={() => basket.setQty(ln.cat, ln.id, ln.qty - 1)} hitSlop={6} style={stepBtn}>
+                        {ln.qty <= 1 ? (
+                          <Ionicons name="trash-outline" size={15} color={t.inkFaint} />
+                        ) : (
+                          <Text style={{ color: t.ink, fontSize: 19, fontFamily: sansBold, marginTop: -3 }}>−</Text>
+                        )}
+                      </Pressable>
+                      <Text style={{ minWidth: 22, textAlign: 'center', color: t.ink, fontSize: 15, fontFamily: sansBold }}>{ln.qty}</Text>
+                      <Pressable onPress={() => basket.setQty(ln.cat, ln.id, ln.qty + 1)} hitSlop={6} style={stepBtn}>
+                        <Text style={{ color: t.ink, fontSize: 17, fontFamily: sansBold, marginTop: -1 }}>+</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          <Pressable
+            onPress={() => setShowAdd(true)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              marginHorizontal: 18,
+              marginTop: 18,
+              borderWidth: 1.5,
+              borderColor: t.brand,
+              borderStyle: 'dashed',
+              borderRadius: 14,
+              paddingVertical: 14,
+            }}
+          >
+            <Text style={{ color: t.brand, fontSize: 18, fontFamily: sansBold, marginTop: -2 }}>+</Text>
+            <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Add items</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
+      <AddItemsModal visible={showAdd} onClose={() => setShowAdd(false)} storeIds={storeIds} />
+      <ListOptionsSheet visible={showOptions} onClose={() => setShowOptions(false)} />
+    </Modal>
   );
 }
 
