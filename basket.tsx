@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BasketItem, PRESETS } from './presets';
 import { useAuth } from './auth';
 import { pullUserData, pushUserData } from './sync';
+import { animateNext } from './anim';
 
 // A named, editable shopping list (Shabbos, Rosh Hashana, …). Each one is
 // independent — selecting one shows only its items; adding an item from the
@@ -154,13 +155,18 @@ export function BasketProvider({ children }: { children: ReactNode }) {
       items: active.items,
       setActive: setActiveId,
       has: (cat, id) => active.items.some((i) => i.cat === cat && i.id === id),
-      toggle: (cat, id) =>
+      toggle: (cat, id) => {
+        animateNext();
         editActive((items) =>
           items.some((i) => i.cat === cat && i.id === id)
             ? items.filter((i) => !(i.cat === cat && i.id === id))
             : [...items, { cat, id }],
-        ),
-      remove: (cat, id) => editActive((items) => items.filter((i) => !(i.cat === cat && i.id === id))),
+        );
+      },
+      remove: (cat, id) => {
+        animateNext();
+        editActive((items) => items.filter((i) => !(i.cat === cat && i.id === id)));
+      },
       clear: () => editActive(() => []),
       resetActive: () => {
         const p = PRESETS.find((x) => x.id === activeId);
@@ -201,20 +207,27 @@ export function BasketProvider({ children }: { children: ReactNode }) {
           const exists = cur.some((i) => i.cat === cat && i.id === id);
           return { ...prev, [activeId]: exists ? cur.filter((i) => !(i.cat === cat && i.id === id)) : [...cur, { cat, id }] };
         }),
-      removeTemp: (cat, id) =>
+      removeTemp: (cat, id) => {
+        animateNext();
         setTempByList((prev) => ({
           ...prev,
           [activeId]: (prev[activeId] ?? []).filter((i) => !(i.cat === cat && i.id === id)),
-        })),
+        }));
+      },
       regulars,
       hasRegular: (cat, id) => regulars.some((i) => i.cat === cat && i.id === id),
-      toggleRegular: (cat, id) =>
+      toggleRegular: (cat, id) => {
+        animateNext();
         setRegulars((prev) =>
           prev.some((i) => i.cat === cat && i.id === id)
             ? prev.filter((i) => !(i.cat === cat && i.id === id))
             : [...prev, { cat, id }],
-        ),
-      removeRegular: (cat, id) => setRegulars((prev) => prev.filter((i) => !(i.cat === cat && i.id === id))),
+        );
+      },
+      removeRegular: (cat, id) => {
+        animateNext();
+        setRegulars((prev) => prev.filter((i) => !(i.cat === cat && i.id === id)));
+      },
       wipeAll: () => {
         setLists(seedLists());
         setActiveId(PRESETS[0].id);

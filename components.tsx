@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -23,6 +24,7 @@ import { useLocation } from './location';
 import { useProfile } from './profile';
 import { useAuth } from './auth';
 import { useBasket } from './basket';
+import { Pop } from './anim';
 import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
 import { AREAS, areaStores, PriceStatus, StoreWithDist } from './stores';
@@ -129,7 +131,11 @@ function PricePill({ label, price, state }: { label: string; price: number | nul
     <View style={[s.pill, box]}>
       <Text style={s.pillLabel}>{label}</Text>
       <Text style={priceStyle}>{money(price)}</Text>
-      {state === 'win' && <Text style={s.pillFlag}>BEST</Text>}
+      {state === 'win' && (
+        <Pop>
+          <Text style={s.pillFlag}>BEST</Text>
+        </Pop>
+      )}
       {state === 'tie' && <Text style={s.pillFlagMuted}>TIE</Text>}
     </View>
   );
@@ -192,6 +198,17 @@ export function CompareRow({
   const inList = overridden ? !!checked : cat && id ? basket.has(cat, id) : false;
   const doToggle = overridden ? onToggle : cat && id ? () => basket.toggle(cat, id) : undefined;
 
+  // Quick pop when an item gets checked (added to a list).
+  const checkPop = useRef(new Animated.Value(1)).current;
+  const wasIn = useRef(inList);
+  useEffect(() => {
+    if (inList && !wasIn.current) {
+      checkPop.setValue(0.6);
+      Animated.spring(checkPop, { toValue: 1, useNativeDriver: true, friction: 4, tension: 200 }).start();
+    }
+    wasIn.current = inList;
+  }, [inList, checkPop]);
+
   const valid = prices.filter((p): p is number => p != null);
   const min = valid.length ? Math.min(...valid) : null;
   const sorted = [...valid].sort((a, b) => a - b);
@@ -220,7 +237,7 @@ export function CompareRow({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {canAdd ? (
-            <View
+            <Animated.View
               style={{
                 width: 22,
                 height: 22,
@@ -231,16 +248,25 @@ export function CompareRow({
                 backgroundColor: inList ? t.brand : 'transparent',
                 borderWidth: 1.5,
                 borderColor: inList ? t.brand : t.lineStrong,
+                transform: [{ scale: checkPop }],
               }}
             >
               <Text style={{ color: inList ? '#fff' : t.inkSoft, fontSize: 14, fontWeight: '800', marginTop: -1 }}>
                 {inList ? '✓' : '+'}
               </Text>
-            </View>
+            </Animated.View>
           ) : null}
           <Text style={[s.cutName, { flexShrink: 1 }]}>{item}</Text>
         </View>
-        {caption && !soloClean ? <Text style={[s.cutSave, (!multi || save === 0) && s.cutSaveMuted]}>{caption}</Text> : null}
+        {caption && !soloClean ? (
+          multi && save > 0 ? (
+            <Pop>
+              <Text style={s.cutSave}>{caption}</Text>
+            </Pop>
+          ) : (
+            <Text style={[s.cutSave, s.cutSaveMuted]}>{caption}</Text>
+          )
+        ) : null}
       </Pressable>
       <View style={s.pillGroup}>
         {storeIds.map((sid, i) => {

@@ -7,6 +7,7 @@ import { useUI } from './ui';
 import { useLocation } from './location';
 import { useProfile } from './profile';
 import { useBasket } from './basket';
+import { AnimatedMoney } from './anim';
 import {
   CheapestChips,
   CompareRow,
@@ -404,9 +405,12 @@ export function ListScreen() {
                 <Text style={{ color: t.inkSoft, fontSize: 12, fontFamily: sansSemi, letterSpacing: 0.4 }}>
                   CHEAPEST FOR YOUR WHOLE LIST
                 </Text>
-                <Text style={{ color: t.brand, fontFamily: sansBold, fontSize: 22, marginTop: 4 }}>
-                  {STORE_ABBR[res.cheapest.storeId] ?? res.cheapest.storeId} · {money(res.cheapest.total)}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 4 }}>
+                  <Text style={{ color: t.brand, fontFamily: sansBold, fontSize: 22 }}>
+                    {STORE_ABBR[res.cheapest.storeId] ?? res.cheapest.storeId} ·{' '}
+                  </Text>
+                  <AnimatedMoney value={res.cheapest.total} style={{ color: t.brand, fontFamily: sansBold, fontSize: 22 }} />
+                </View>
                 {res.totals.length > 1 ? (
                   <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 4, fontFamily: sansMed }}>
                     vs {res.totals.slice(1).map((tt) => `${STORE_ABBR[tt.storeId] ?? tt.storeId} ${money(tt.total)}`).join('  ·  ')}
