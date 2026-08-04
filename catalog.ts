@@ -193,24 +193,57 @@ export function searchCatalog(query: string, storeIds: string[], limit = 40): Ca
   if (q.length < 2) return [];
   const terms = q.split(' ').filter(Boolean);
 
-  const groups = new Map<string, CatalogHit>();
+  // Collect the products that match the query.
+  interface Match {
+    sid: string;
+    prod: CatalogProduct;
+    keys: string[]; // the AI identity `c` AND the regex key — a product matches another if they share EITHER
+  }
+  const matches: Match[] = [];
   for (const sid of storeIds) {
     for (const prod of CATALOG[sid] ?? []) {
       if (prod.p == null) continue;
       if (CATERING.test(prod.n)) continue; // hide catering trays/platters from comparisons
       const nn = norm(prod.n);
       if (!terms.every((t) => termMatches(t, nn))) continue;
-      const key = keyOfProduct(prod) || nn;
-      const g = groups.get(key);
-      if (g) {
-        const existing = g.prices.find((x) => x.storeId === sid);
-        if (existing) existing.price = Math.min(existing.price, prod.p);
-        else g.prices.push({ storeId: sid, price: prod.p });
-        // Prefer the most descriptive display name (usually the one with a size).
-        if (prod.n.trim().length > g.name.length) g.name = prod.n.trim();
-      } else {
-        groups.set(key, { name: prod.n.trim(), lb: prod.lb, prices: [{ storeId: sid, price: prod.p }] });
-      }
+      const keys = [prod.c, groupKey(prod.n) || nn].filter((k): k is string => !!k);
+      matches.push({ sid, prod, keys: keys.length ? keys : [nn] });
+    }
+  }
+
+  // Union-find over the keys: the AI key and the regex key are treated as the same
+  // group, so we get the union of both matchers (never fewer pairs than either alone).
+  const parent = new Map<string, string>();
+  const find = (x: string): string => {
+    let r = x;
+    while (parent.get(r) !== r) r = parent.get(r)!;
+    while (parent.get(x) !== r) {
+      const next = parent.get(x)!;
+      parent.set(x, r);
+      x = next;
+    }
+    return r;
+  };
+  const add = (k: string) => {
+    if (!parent.has(k)) parent.set(k, k);
+  };
+  for (const m of matches) {
+    m.keys.forEach(add);
+    for (let i = 1; i < m.keys.length; i++) parent.set(find(m.keys[0]), find(m.keys[i]));
+  }
+
+  const groups = new Map<string, CatalogHit>();
+  for (const m of matches) {
+    const root = find(m.keys[0]);
+    const g = groups.get(root);
+    if (g) {
+      const existing = g.prices.find((x) => x.storeId === m.sid);
+      if (existing) existing.price = Math.min(existing.price, m.prod.p);
+      else g.prices.push({ storeId: m.sid, price: m.prod.p });
+      // Prefer the most descriptive display name (usually the one with a size).
+      if (m.prod.n.trim().length > g.name.length) g.name = m.prod.n.trim();
+    } else {
+      groups.set(root, { name: m.prod.n.trim(), lb: m.prod.lb, prices: [{ storeId: m.sid, price: m.prod.p }] });
     }
   }
 
