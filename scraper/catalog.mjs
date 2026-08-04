@@ -256,6 +256,10 @@ async function run() {
   const feedPath = join(__dirname, '..', 'data.json');
   writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, ...(weeklyAds ? { weeklyAds } : {}) }));
 
+  // Also refresh the bundled snapshot the app imports (offline / first-render
+  // fallback) so it carries the same products + AI keys as the feed.
+  writeFileSync(join(__dirname, '..', 'catalog.json'), JSON.stringify(out));
+
   const total = Object.entries(out).map(([k, a]) => `${k}:${a.length}`).join('  ');
   console.log(`\nWrote ${path}\n  ${total}\n  feed -> ${feedPath} (updatedAt ${stamp})`);
 }
