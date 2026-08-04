@@ -1712,3 +1712,145 @@ export function NearbyStoreRow({ store }: { store: StoreWithDist }) {
     </View>
   );
 }
+
+/* List tab → tap ⋯ → manage the ACTIVE list: rename, change emoji, reset (presets)
+   or delete (custom), and "uncheck all" to start a fresh shopping trip. */
+export function ListOptionsSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { s, t } = useUI();
+  const basket = useBasket();
+  const insets = useSafeAreaInsets();
+  const [name, setName] = useState(basket.active.label);
+  const [emoji, setEmoji] = useState(basket.active.emoji);
+  const isPreset = basket.isPreset(basket.active.id);
+  const EMOJIS = ['🛒', '🍎', '🍗', '🥩', '🧀', '🐟', '🍞', '🥗', '🎉', '🕯️', '🍷', '🔥', '🍰', '☕', '🥧', '🍫'];
+
+  // Re-sync the fields each time the sheet opens (the active list may have changed).
+  useEffect(() => {
+    if (visible) {
+      setName(basket.active.label);
+      setEmoji(basket.active.emoji);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, basket.active.id]);
+
+  const save = () => {
+    basket.renameList(basket.active.id, name, emoji);
+    onClose();
+  };
+  const confirmReset = () =>
+    Alert.alert('Reset list?', `Restore “${basket.active.label}” to its default items? Your changes to this list are cleared.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Reset', style: 'destructive', onPress: () => { basket.resetActive(); onClose(); } },
+    ]);
+  const confirmDelete = () =>
+    Alert.alert('Delete list?', `“${basket.active.label}” will be removed.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => { basket.deleteList(basket.active.id); onClose(); } },
+    ]);
+
+  const label = { color: t.inkSoft, fontSize: 12, fontFamily: sans.semi, letterSpacing: 0.4, marginTop: 16, marginBottom: 8 };
+  const actionRow = {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    paddingVertical: 13,
+    borderTopWidth: 1,
+    borderTopColor: t.line,
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: t.surface,
+              borderTopLeftRadius: 22,
+              borderTopRightRadius: 22,
+              padding: 20,
+              paddingBottom: insets.bottom + 20,
+              borderWidth: 1,
+              borderColor: t.line,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={s.modalTitle}>List options</Text>
+              <Pressable
+                onPress={save}
+                hitSlop={10}
+                style={{ paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontFamily: sans.bold, fontSize: 14 }}>Save</Text>
+              </Pressable>
+            </View>
+
+            <Text style={label}>NAME</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="List name"
+              placeholderTextColor={t.inkFaint}
+              returnKeyType="done"
+              onSubmitEditing={save}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: t.line,
+                backgroundColor: t.surface2,
+                paddingHorizontal: 14,
+                color: t.ink,
+                fontSize: 16,
+                fontFamily: sans.med,
+              }}
+            />
+
+            <Text style={label}>EMOJI</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+              {EMOJIS.map((e) => {
+                const on = e === emoji;
+                return (
+                  <Pressable
+                    key={e}
+                    onPress={() => setEmoji(e)}
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: on ? t.brandSoft : t.surface2,
+                      borderWidth: 1.5,
+                      borderColor: on ? t.brand : t.line,
+                    }}
+                  >
+                    <Text style={{ fontSize: 24 }}>{e}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View style={{ marginTop: 18 }}>
+              <Pressable onPress={() => { basket.clearChecks(); onClose(); }} style={actionRow}>
+                <Ionicons name="refresh-outline" size={18} color={t.inkSoft} />
+                <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.semi }}>Uncheck all (new trip)</Text>
+              </Pressable>
+              {isPreset ? (
+                <Pressable onPress={confirmReset} style={actionRow}>
+                  <Ionicons name="arrow-undo-outline" size={18} color={t.inkSoft} />
+                  <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.semi }}>Reset to default items</Text>
+                </Pressable>
+              ) : (
+                <Pressable onPress={confirmDelete} style={actionRow}>
+                  <Ionicons name="trash-outline" size={18} color={t.oxblood} />
+                  <Text style={{ color: t.oxblood, fontSize: 15, fontFamily: sans.semi }}>Delete this list</Text>
+                </Pressable>
+              )}
+            </View>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}

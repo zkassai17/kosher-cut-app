@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUI } from './ui';
@@ -14,6 +15,7 @@ import {
   CompareRow,
   DealRow,
   FeedHeader,
+  ListOptionsSheet,
   ListPicker,
   PillTabs,
   SearchBar,
@@ -274,12 +276,14 @@ export function StoresScreen() {
   );
 }
 
-/* ---------- List: your active list + where the whole cart is cheapest ---------- */
+/* ---------- List: shop + edit the active list in one place ---------- */
 export function ListScreen() {
   const { s, t } = useUI();
   const { origin, maxMiles } = useLocation();
   const basket = useBasket();
+  const [showAdd, setShowAdd] = useState(false);
   const [showTripAdd, setShowTripAdd] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   // Saved list items + "just this trip" one-offs (deduped). Trip items are
   // priced into the cart but never written to the saved list.
@@ -290,43 +294,123 @@ export function ListScreen() {
   const res = basketTotals(allItems, active);
   const empty = allItems.length === 0;
 
-  // Lead with items your nearby stores actually price; tuck the rest into a quiet
-  // "not sold near you" group so the list doesn't read as half-empty.
-  const pricedLines = res.lines.filter((l) => l.cheapestIdx >= 0);
-  const unpricedLines = res.lines.filter((l) => l.cheapestIdx < 0);
-  const renderLine = (ln: (typeof res.lines)[number], muted = false) => {
+  // Shopping split: what's still to buy on top (priced first, then not-sold-nearby),
+  // checked-off items dim and drop below a "Got it" divider.
+  const toBuy = res.lines.filter((l) => !basket.isGot(l.cat, l.id));
+  const gotLines = res.lines.filter((l) => basket.isGot(l.cat, l.id));
+  const toBuyPriced = toBuy.filter((l) => l.cheapestIdx >= 0);
+  const toBuyUnpriced = toBuy.filter((l) => l.cheapestIdx < 0);
+
+  const stepBtn = {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: t.line,
+    backgroundColor: t.surface,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+  const roundBtn = {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: t.surface,
+    borderWidth: 1,
+    borderColor: t.line,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+
+  const renderLine = (ln: (typeof res.lines)[number], got = false) => {
     const best = ln.cheapestIdx >= 0 ? ln.prices[ln.cheapestIdx] : null;
     const bestStore = ln.cheapestIdx >= 0 ? STORE_ABBR[active[ln.cheapestIdx]] ?? active[ln.cheapestIdx] : null;
     const isTrip = tripKeys.has(`${ln.cat}:${ln.id}`);
+    const setQ = (n: number) => (isTrip ? basket.setTempQty(ln.cat, ln.id, n) : basket.setQty(ln.cat, ln.id, n));
     return (
       <View
         key={`${ln.cat}-${ln.id}`}
-        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.line }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: t.line }}
       >
+        {/* "Got it" checkbox */}
+        <Pressable
+          onPress={() => basket.toggleGot(ln.cat, ln.id)}
+          hitSlop={8}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 12,
+            borderWidth: 2,
+            borderColor: got ? t.brand : t.line,
+            backgroundColor: got ? t.brand : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {got ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}
+        </Pressable>
+
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: muted ? t.inkSoft : t.ink, fontSize: 15, fontFamily: sansBold, flexShrink: 1 }}>{cleanName(ln.label)}</Text>
+            <Text
+              numberOfLines={2}
+              style={{
+                color: got ? t.inkFaint : t.ink,
+                fontSize: 15,
+                fontFamily: sansBold,
+                flexShrink: 1,
+                textDecorationLine: got ? 'line-through' : 'none',
+              }}
+            >
+              {cleanName(ln.label)}
+            </Text>
             {isTrip ? (
               <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, backgroundColor: t.goldBg }}>
                 <Text style={{ color: t.gold, fontSize: 10, fontFamily: sansBold, letterSpacing: 0.3 }}>THIS TRIP</Text>
               </View>
             ) : null}
           </View>
-          {!muted ? (
+          {!got ? (
             <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 2, fontFamily: sansMed }}>
-              {best != null ? `${money(best)}${unitSuffix(ln.unit)} at ${bestStore}` : 'Not sold at these stores'}
+              {best != null
+                ? `${money(best)}${unitSuffix(ln.unit)} at ${bestStore}${ln.qty > 1 ? `  ·  ${ln.qty} = ${money(best * ln.qty)}` : ''}`
+                : 'Not sold at these stores'}
             </Text>
           ) : null}
         </View>
-        <Pressable
-          onPress={() => (isTrip ? basket.removeTemp(ln.cat, ln.id) : basket.remove(ln.cat, ln.id))}
-          hitSlop={10}
-          style={{ padding: 6 }}
-        >
-          <Text style={{ color: t.inkFaint, fontSize: 18 }}>✕</Text>
-        </Pressable>
+
+        {/* Quantity stepper — minus at 1 removes the item */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+          <Pressable onPress={() => setQ(ln.qty - 1)} hitSlop={6} style={stepBtn}>
+            {ln.qty <= 1 ? (
+              <Ionicons name="trash-outline" size={15} color={t.inkFaint} />
+            ) : (
+              <Text style={{ color: t.ink, fontSize: 19, fontFamily: sansBold, marginTop: -3 }}>−</Text>
+            )}
+          </Pressable>
+          <Text style={{ minWidth: 22, textAlign: 'center', color: t.ink, fontSize: 15, fontFamily: sansBold }}>{ln.qty}</Text>
+          <Pressable onPress={() => setQ(ln.qty + 1)} hitSlop={6} style={stepBtn}>
+            <Text style={{ color: t.ink, fontSize: 17, fontFamily: sansBold, marginTop: -1 }}>+</Text>
+          </Pressable>
+        </View>
       </View>
     );
+  };
+
+  const shareList = () => {
+    const c = res.cheapest;
+    const storeLine = c
+      ? `Cheapest at ${KSTORES.find((k) => k.id === c.storeId)?.name ?? c.storeId} — about ${money(c.total)}` +
+        (c.missing > 0 ? ` (${c.missing} item${c.missing > 1 ? 's' : ''} not sold there)` : '')
+      : undefined;
+    Share.share({
+      message: shareText({
+        label: basket.active.label,
+        emoji: basket.active.emoji,
+        storeLine,
+        itemLabels: res.lines.map((l) => (l.qty > 1 ? `${cleanName(l.label)} ×${l.qty}` : cleanName(l.label))),
+      }),
+    });
   };
 
   return (
@@ -334,47 +418,16 @@ export function ListScreen() {
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 18,
-            paddingTop: 6,
-          }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}
         >
-          <Text style={s.h1clean}>Your list</Text>
+          <ListPicker />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={() => {
-                const c = res.cheapest;
-                const storeLine = c
-                  ? `Cheapest at ${KSTORES.find((k) => k.id === c.storeId)?.name ?? c.storeId} — about ${money(c.total)}` +
-                    (c.missing > 0 ? ` (${c.missing} item${c.missing > 1 ? 's' : ''} not sold there)` : '')
-                  : undefined;
-                Share.share({
-                  message: shareText({
-                    label: basket.active.label,
-                    emoji: basket.active.emoji,
-                    storeLine,
-                    itemLabels: res.lines.map((l) => l.label),
-                  }),
-                });
-              }}
-              hitSlop={8}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: t.surface,
-                borderWidth: 1,
-                borderColor: t.line,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Pressable onPress={() => setShowOptions(true)} hitSlop={8} style={roundBtn}>
+              <Ionicons name="ellipsis-horizontal" size={18} color={t.inkSoft} />
+            </Pressable>
+            <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
               <Text style={{ fontSize: 16, color: t.brand, marginTop: -1 }}>↗</Text>
             </Pressable>
-            <ListPicker />
           </View>
         </View>
         <Text style={s.listHint}>
@@ -386,7 +439,7 @@ export function ListScreen() {
           <View style={{ alignItems: 'center', paddingHorizontal: 40, marginTop: 40 }}>
             <Text style={{ fontSize: 44, marginBottom: 14 }}>🛒</Text>
             <Text style={{ color: t.inkSoft, fontSize: 15, textAlign: 'center', lineHeight: 22, fontFamily: sansMed }}>
-              This list is empty.{'\n'}Go to the Account tab to add items.
+              This list is empty.{'\n'}Tap “+ Add items” below to build it.
             </Text>
           </View>
         ) : (
@@ -426,22 +479,36 @@ export function ListScreen() {
               </View>
             ) : null}
 
-            {pricedLines.map((ln) => renderLine(ln))}
+            {/* Progress: what's left to buy */}
+            <Text style={{ fontSize: 12, color: t.inkSoft, fontFamily: sansSemi, letterSpacing: 0.4, marginTop: 4, marginBottom: 2 }}>
+              {toBuy.length > 0 ? `TO BUY · ${toBuy.length} LEFT` : 'ALL CHECKED OFF ✓'}
+            </Text>
 
-            {unpricedLines.length ? (
+            {toBuyPriced.map((ln) => renderLine(ln))}
+
+            {toBuyUnpriced.length ? (
               <>
-                <Text style={{ marginTop: 16, marginBottom: 4, fontSize: 13, color: t.inkFaint, fontFamily: sansSemi }}>
+                <Text style={{ marginTop: 14, marginBottom: 2, fontSize: 13, color: t.inkFaint, fontFamily: sansSemi }}>
                   Not sold at your nearby stores
                 </Text>
-                {unpricedLines.map((ln) => renderLine(ln, true))}
+                {toBuyUnpriced.map((ln) => renderLine(ln))}
+              </>
+            ) : null}
+
+            {gotLines.length ? (
+              <>
+                <Text style={{ marginTop: 16, marginBottom: 2, fontSize: 12, color: t.brand, fontFamily: sansSemi, letterSpacing: 0.4 }}>
+                  GOT IT ✓
+                </Text>
+                {gotLines.map((ln) => renderLine(ln, true))}
               </>
             ) : null}
           </View>
         )}
 
-        {/* Add a one-off item just for this shopping trip (doesn't save to the list) */}
+        {/* Add items → saves to this list */}
         <Pressable
-          onPress={() => setShowTripAdd(true)}
+          onPress={() => setShowAdd(true)}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -457,10 +524,17 @@ export function ListScreen() {
           }}
         >
           <Text style={{ color: t.brand, fontSize: 18, fontFamily: sansBold, marginTop: -2 }}>+</Text>
-          <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Add an item (just this trip)</Text>
+          <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Add items</Text>
+        </Pressable>
+
+        {/* Add a one-off just for this trip (not saved to the list) */}
+        <Pressable onPress={() => setShowTripAdd(true)} style={{ alignSelf: 'center', marginTop: 10, padding: 6 }}>
+          <Text style={{ color: t.inkSoft, fontSize: 13.5, fontFamily: sansSemi }}>+ Just for this trip</Text>
         </Pressable>
       </ScrollView>
+      <AddItemsModal visible={showAdd} onClose={() => setShowAdd(false)} storeIds={active} />
       <AddItemsModal visible={showTripAdd} onClose={() => setShowTripAdd(false)} storeIds={active} temp />
+      <ListOptionsSheet visible={showOptions} onClose={() => setShowOptions(false)} />
     </View>
   );
 }
@@ -472,7 +546,7 @@ export function AccountScreen() {
   const { name } = useProfile();
   const basket = useBasket();
   const { user, configured } = useAuth();
-  const [showAdd, setShowAdd] = useState(false);
+  const navigation = useNavigation<any>();
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -492,9 +566,11 @@ export function AccountScreen() {
   }, 0);
   const initial = (name?.trim()?.[0] ?? '').toUpperCase();
 
+  // Tapping a list makes it active and jumps to the List tab — the one place you
+  // now view + edit a list (no separate add-modal as the door in).
   const openList = (id: string) => {
     basket.setActive(id);
-    setShowAdd(true);
+    navigation.navigate('List');
   };
 
   return (
@@ -675,13 +751,12 @@ export function AccountScreen() {
           </Text>
         )}
       </ScrollView>
-      <AddItemsModal visible={showAdd} onClose={() => setShowAdd(false)} storeIds={active} />
       <CreateListModal
         visible={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={() => {
           setShowCreate(false);
-          setShowAdd(true); // jump straight into adding items to the new list
+          navigation.navigate('List'); // open the new (empty) list to build it
         }}
       />
       <AddItemsModal visible={showRegAdd} onClose={() => setShowRegAdd(false)} storeIds={active} regular />

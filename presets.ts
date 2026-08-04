@@ -4,6 +4,7 @@
 export interface BasketItem {
   cat: string;
   id: string;
+  qty?: number; // how many to buy — defaults to 1 when absent (older lists/presets)
 }
 
 export interface Preset {

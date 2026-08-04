@@ -86,7 +86,8 @@ export interface BasketLine {
   id: string;
   label: string;
   unit: Unit;
-  prices: (number | null)[]; // parallel to storeIds
+  qty: number; // how many to buy (>=1)
+  prices: (number | null)[]; // parallel to storeIds — UNIT price at each store
   cheapestIdx: number; // index of the cheapest store, or -1 if unpriced here
 }
 
@@ -107,8 +108,8 @@ export interface BasketResult {
 }
 
 // Total a shopping list at each store, plus the "split across stores" optimum.
-export function basketTotals(items: { cat: string; id: string }[], storeIds: string[]): BasketResult {
-  const lines: BasketLine[] = items.map(({ cat, id }) => {
+export function basketTotals(items: { cat: string; id: string; qty?: number }[], storeIds: string[]): BasketResult {
+  const lines: BasketLine[] = items.map(({ cat, id, qty }) => {
     // Catalog products (any searched item) are stored as { cat: 'catalog', id: name }
     // and priced by matching the name across the full store catalogs.
     const isCatalog = cat === 'catalog';
@@ -121,6 +122,7 @@ export function basketTotals(items: { cat: string; id: string }[], storeIds: str
       id,
       label: meta?.label ?? id,
       unit: isCatalog ? (catalogIsLb(id, storeIds) ? 'lb' : 'ea') : meta?.unit ?? 'lb',
+      qty: Math.max(1, Math.round(qty ?? 1)),
       prices,
       cheapestIdx: min != null ? prices.indexOf(min) : -1,
     };
@@ -133,7 +135,7 @@ export function basketTotals(items: { cat: string; id: string }[], storeIds: str
       for (const ln of lines) {
         const p = ln.prices[i];
         if (p != null) {
-          total += p;
+          total += p * ln.qty; // quantity-aware: 2 challahs count twice
           have++;
         }
       }
@@ -146,7 +148,7 @@ export function basketTotals(items: { cat: string; id: string }[], storeIds: str
 
   const splitTotal = lines.reduce((sum, ln) => {
     const valid = ln.prices.filter((p): p is number => p != null);
-    return sum + (valid.length ? Math.min(...valid) : 0);
+    return sum + (valid.length ? Math.min(...valid) * ln.qty : 0);
   }, 0);
 
   // Only claim savings against a store that actually carries the WHOLE list.

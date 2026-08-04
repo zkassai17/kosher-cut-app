@@ -21,6 +21,9 @@ export interface NamedList {
 const STORAGE_KEY = 'kc.lists.v1';
 const ACTIVE_KEY = 'kc.activeList.v1';
 const REGULARS_KEY = 'kc.regulars.v1';
+const CHECKED_KEY = 'kc.checked.v1'; // "got it" marks, per list — device-local, not synced
+
+const itemKey = (cat: string, id: string) => `${cat}:${id}`;
 
 const seedLists = (): NamedList[] =>
   PRESETS.map((p) => ({ id: p.id, label: p.label, emoji: p.emoji, items: p.items.map((i) => ({ ...i })) }));
@@ -34,9 +37,11 @@ interface BasketState {
   has: (cat: string, id: string) => boolean;
   toggle: (cat: string, id: string) => void;
   remove: (cat: string, id: string) => void;
+  setQty: (cat: string, id: string, n: number) => void; // set a saved item's quantity (n<1 removes)
   clear: () => void; // empty the active list
   resetActive: () => void; // restore the active list to its preset defaults
   createList: (label: string, emoji: string) => void; // add a custom list + make it active
+  renameList: (id: string, label: string, emoji: string) => void; // rename + re-emoji any list
   deleteList: (id: string) => void; // remove a custom list
   isPreset: (id: string) => boolean; // preset lists can't be deleted, only reset
   importList: (list: { label: string; emoji: string; items: BasketItem[] }) => void; // from a shared list
@@ -46,6 +51,12 @@ interface BasketState {
   hasTemp: (cat: string, id: string) => boolean;
   toggleTemp: (cat: string, id: string) => void;
   removeTemp: (cat: string, id: string) => void;
+  setTempQty: (cat: string, id: string, n: number) => void; // qty for a this-trip item (n<1 removes)
+  // "Got it" shopping checkmarks — per active list, saved on THIS device only (a
+  // shopping trip is device-local, never synced). clearChecks starts a new trip.
+  isGot: (cat: string, id: string) => boolean;
+  toggleGot: (cat: string, id: string) => void;
+  clearChecks: () => void;
   // "My Regulars" — the products you always buy; we watch where each is cheapest.
   regulars: BasketItem[];
   hasRegular: (cat: string, id: string) => boolean;
@@ -63,6 +74,8 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   // "This trip" items, keyed by list id — NOT persisted (fresh each app launch).
   const [tempByList, setTempByList] = useState<Record<string, BasketItem[]>>({});
   const [regulars, setRegulars] = useState<BasketItem[]>([]);
+  // "Got it" marks per list — device-local (a shopping trip isn't cloud state).
+  const [checkedByList, setCheckedByList] = useState<Record<string, string[]>>({});
   const hydrated = useRef(false);
   const syncedUser = useRef<string | null>(null); // whose cloud pull we've STARTED
   const pulledUser = useRef<string | null>(null); // whose cloud pull has FINISHED (safe to push)
@@ -71,11 +84,13 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const [rawLists, rawActive, rawReg] = await Promise.all([
+        const [rawLists, rawActive, rawReg, rawChecked] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(ACTIVE_KEY),
           AsyncStorage.getItem(REGULARS_KEY),
+          AsyncStorage.getItem(CHECKED_KEY),
         ]);
+        if (rawChecked) setCheckedByList(JSON.parse(rawChecked));
         if (rawLists) {
           const stored: NamedList[] = JSON.parse(rawLists);
           // Keep saved lists; graft in any preset added since (so new presets show up).
@@ -142,12 +157,22 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated.current) AsyncStorage.setItem(REGULARS_KEY, JSON.stringify(regulars)).catch(() => {});
   }, [regulars]);
+  useEffect(() => {
+    if (hydrated.current) AsyncStorage.setItem(CHECKED_KEY, JSON.stringify(checkedByList)).catch(() => {});
+  }, [checkedByList]);
 
   const active = lists.find((l) => l.id === activeId) ?? lists[0];
 
   const value = useMemo<BasketState>(() => {
     const editActive = (fn: (items: BasketItem[]) => BasketItem[]) =>
       setLists((prev) => prev.map((l) => (l.id === activeId ? { ...l, items: fn(l.items) } : l)));
+    // Drop a "got it" mark when its item leaves the active list, so a later re-add
+    // doesn't come back pre-checked.
+    const dropCheck = (cat: string, id: string) =>
+      setCheckedByList((prev) => {
+        const cur = prev[activeId] ?? [];
+        return cur.includes(itemKey(cat, id)) ? { ...prev, [activeId]: cur.filter((k) => k !== itemKey(cat, id)) } : prev;
+      });
     return {
       lists,
       activeId,
@@ -165,18 +190,35 @@ export function BasketProvider({ children }: { children: ReactNode }) {
       },
       remove: (cat, id) => {
         animateNext();
+        dropCheck(cat, id);
         editActive((items) => items.filter((i) => !(i.cat === cat && i.id === id)));
+      },
+      setQty: (cat, id, n) => {
+        const q = Math.round(n);
+        if (q < 1) {
+          animateNext();
+          dropCheck(cat, id);
+          editActive((items) => items.filter((i) => !(i.cat === cat && i.id === id)));
+          return;
+        }
+        editActive((items) => items.map((i) => (i.cat === cat && i.id === id ? { ...i, qty: Math.min(99, q) } : i)));
       },
       clear: () => editActive(() => []),
       resetActive: () => {
         const p = PRESETS.find((x) => x.id === activeId);
-        if (p) editActive(() => p.items.map((i) => ({ ...i })));
+        if (p) {
+          animateNext();
+          editActive(() => p.items.map((i) => ({ ...i })));
+          setCheckedByList((prev) => ({ ...prev, [activeId]: [] })); // fresh trip
+        }
       },
       createList: (label, emoji) => {
         const id = `custom-${Date.now()}`;
         setLists((prev) => [...prev, { id, label: label.trim() || 'My list', emoji: emoji || '🛒', items: [] }]);
         setActiveId(id);
       },
+      renameList: (id, label, emoji) =>
+        setLists((prev) => prev.map((l) => (l.id === id ? { ...l, label: label.trim() || l.label, emoji: emoji || l.emoji } : l))),
       deleteList: (id) => {
         if (PRESETS.some((p) => p.id === id)) return; // presets stay
         setLists((prev) => {
@@ -209,10 +251,37 @@ export function BasketProvider({ children }: { children: ReactNode }) {
         }),
       removeTemp: (cat, id) => {
         animateNext();
+        dropCheck(cat, id);
         setTempByList((prev) => ({
           ...prev,
           [activeId]: (prev[activeId] ?? []).filter((i) => !(i.cat === cat && i.id === id)),
         }));
+      },
+      setTempQty: (cat, id, n) => {
+        const q = Math.round(n);
+        if (q < 1) {
+          animateNext();
+          dropCheck(cat, id);
+          setTempByList((prev) => ({ ...prev, [activeId]: (prev[activeId] ?? []).filter((i) => !(i.cat === cat && i.id === id)) }));
+          return;
+        }
+        setTempByList((prev) => ({
+          ...prev,
+          [activeId]: (prev[activeId] ?? []).map((i) => (i.cat === cat && i.id === id ? { ...i, qty: Math.min(99, q) } : i)),
+        }));
+      },
+      isGot: (cat, id) => (checkedByList[activeId] ?? []).includes(itemKey(cat, id)),
+      toggleGot: (cat, id) => {
+        animateNext();
+        setCheckedByList((prev) => {
+          const cur = prev[activeId] ?? [];
+          const k = itemKey(cat, id);
+          return { ...prev, [activeId]: cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k] };
+        });
+      },
+      clearChecks: () => {
+        animateNext();
+        setCheckedByList((prev) => ({ ...prev, [activeId]: [] }));
       },
       regulars,
       hasRegular: (cat, id) => regulars.some((i) => i.cat === cat && i.id === id),
@@ -233,9 +302,10 @@ export function BasketProvider({ children }: { children: ReactNode }) {
         setActiveId(PRESETS[0].id);
         setTempByList({});
         setRegulars([]);
+        setCheckedByList({});
       },
     };
-  }, [lists, activeId, active, tempByList, regulars]);
+  }, [lists, activeId, active, tempByList, regulars, checkedByList]);
 
   return <BasketContext.Provider value={value}>{children}</BasketContext.Provider>;
 }
