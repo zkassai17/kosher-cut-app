@@ -547,6 +547,7 @@ export function AccountScreen() {
   const basket = useBasket();
   const { user, configured } = useAuth();
   const navigation = useNavigation<any>();
+  const [showAdd, setShowAdd] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -566,11 +567,15 @@ export function AccountScreen() {
   }, 0);
   const initial = (name?.trim()?.[0] ?? '').toUpperCase();
 
-  // Tapping a list makes it active and jumps to the List tab — the one place you
-  // now view + edit a list (no separate add-modal as the door in).
+  // Tapping a list's body opens the full List page (shop view, quantities, check-off).
   const openList = (id: string) => {
     basket.setActive(id);
     navigation.navigate('List');
+  };
+  // The "+ Add" pill on a card adds/edits items right here on Account.
+  const editList = (id: string) => {
+    basket.setActive(id);
+    setShowAdd(true);
   };
 
   return (
@@ -727,6 +732,27 @@ export function AccountScreen() {
                     )}
                   </Text>
                 </View>
+                {/* Add/edit items right here on Account (tapping the card body opens
+                    the full List page). Inner Pressable captures the tap, so this
+                    never also fires the card's navigation. */}
+                <Pressable
+                  onPress={() => editList(l.id)}
+                  hitSlop={8}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    paddingHorizontal: 11,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: t.brandSoft,
+                    borderWidth: 1,
+                    borderColor: t.brand,
+                  }}
+                >
+                  <Text style={{ color: t.brand, fontSize: 15, fontFamily: sansBold, marginTop: -2 }}>+</Text>
+                  <Text style={{ color: t.brand, fontSize: 13, fontFamily: sansBold }}>Add</Text>
+                </Pressable>
                 <Text style={{ color: t.inkFaint, fontSize: 24, fontFamily: sansMed }}>›</Text>
               </Pressable>
             );
@@ -751,12 +777,13 @@ export function AccountScreen() {
           </Text>
         )}
       </ScrollView>
+      <AddItemsModal visible={showAdd} onClose={() => setShowAdd(false)} storeIds={active} />
       <CreateListModal
         visible={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={() => {
           setShowCreate(false);
-          navigation.navigate('List'); // open the new (empty) list to build it
+          setShowAdd(true); // jump straight into adding items to the new list
         }}
       />
       <AddItemsModal visible={showRegAdd} onClose={() => setShowRegAdd(false)} storeIds={active} regular />
