@@ -632,7 +632,7 @@ export function BrandMark({ size = 21 }: { size?: number }) {
 }
 
 export function FeedHeader({ onDeals }: { onDeals?: () => void }) {
-  const { s } = useUI();
+  const { s, t } = useUI();
   const { origin } = useLocation();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -652,7 +652,7 @@ export function FeedHeader({ onDeals }: { onDeals?: () => void }) {
             onPress={() => setOpen(true)}
             hitSlop={8}
           >
-            <Text style={s.feedAddrPin}>◉</Text>
+            <Ionicons name="location-sharp" size={13} color={t.brand} style={{ marginRight: 3 }} />
             <Text numberOfLines={1} style={[s.feedAddrText, { fontSize: 15 }]}>
               {origin.label}
             </Text>
@@ -662,7 +662,7 @@ export function FeedHeader({ onDeals }: { onDeals?: () => void }) {
       </View>
       {onDeals ? (
         <Pressable style={[s.feedAddr, { marginTop: 12 }]} onPress={() => setOpen(true)} hitSlop={8}>
-          <Text style={s.feedAddrPin}>◉</Text>
+          <Ionicons name="location-sharp" size={13} color={t.brand} style={{ marginRight: 3 }} />
           <Text style={s.feedAddrText}>{origin.label}</Text>
           <Text style={s.feedChevron}>▾</Text>
         </Pressable>

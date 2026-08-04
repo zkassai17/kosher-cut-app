@@ -7,6 +7,7 @@ import { useUI } from './ui';
 import { useLocation } from './location';
 import { useProfile } from './profile';
 import { useBasket } from './basket';
+import { useAuth } from './auth';
 import { AnimatedMoney } from './anim';
 import {
   CheapestChips,
@@ -470,12 +471,26 @@ export function AccountScreen() {
   const { origin, maxMiles } = useLocation();
   const { name } = useProfile();
   const basket = useBasket();
+  const { user, configured } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
+
+  // Price every list once, up front — powers the per-row "cheapest cart" line and
+  // the header savings roll-up. Cheap: a handful of items × 3 stores per list.
+  const listRes = new Map(basket.lists.map((l) => [l.id, basketTotals(l.items, active)]));
+  const totalItems = basket.lists.reduce((n, l) => n + l.items.length, 0);
+  // Honest account-level "you save": per list, the gap between the cheapest and the
+  // priciest store that carries the WHOLE list (missing===0) — apples to apples, so
+  // no store looks cheap just because it's missing items. Summed across lists.
+  const accountSaved = basket.lists.reduce((sum, l) => {
+    const complete = (listRes.get(l.id)?.totals ?? []).filter((tt) => tt.missing === 0);
+    return complete.length >= 2 ? sum + (complete[complete.length - 1].total - complete[0].total) : sum;
+  }, 0);
+  const initial = (name?.trim()?.[0] ?? '').toUpperCase();
 
   const openList = (id: string) => {
     basket.setActive(id);
@@ -487,16 +502,22 @@ export function AccountScreen() {
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 44 }}>
         {/* Personal header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18, paddingTop: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8 }}>
           <View
-            style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 26 }}>👋</Text>
+            {initial ? (
+              <Text style={{ fontSize: 19, color: '#fff', fontFamily: sansBold }}>{initial}</Text>
+            ) : (
+              <Text style={{ fontSize: 20 }}>👋</Text>
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.h1clean} numberOfLines={1}>{name ? `Hi, ${name}` : 'Your account'}</Text>
             <Text style={{ color: t.inkSoft, fontSize: 13, marginTop: 2, fontFamily: sansMed }}>
-              {basket.lists.length} {basket.lists.length === 1 ? 'list' : 'lists'}
+              {accountSaved > 0.5
+                ? `Cheapest stores save you ~${money(accountSaved)}`
+                : `${totalItems} ${totalItems === 1 ? 'item' : 'items'} across ${basket.lists.length} ${basket.lists.length === 1 ? 'list' : 'lists'}`}
             </Text>
           </View>
           <Pressable onPress={() => setShowSettings(true)} hitSlop={12} style={{ padding: 4 }}>
@@ -592,45 +613,67 @@ export function AccountScreen() {
         {/* Lists */}
         <Text style={s.listHint}>YOUR LISTS</Text>
         <View style={{ paddingHorizontal: 18, gap: 10 }}>
-          {basket.lists.map((l) => (
-            <Pressable
-              key={l.id}
-              onPress={() => openList(l.id)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 14,
-                backgroundColor: t.surface,
-                borderWidth: 1,
-                borderColor: t.line,
-                borderRadius: 14,
-                padding: 13,
-              }}
-            >
-              <View
-                style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: t.brandSoft, alignItems: 'center', justifyContent: 'center' }}
+          {basket.lists.map((l) => {
+            const cheapest = listRes.get(l.id)?.cheapest ?? null;
+            const nItems = `${l.items.length} ${l.items.length === 1 ? 'item' : 'items'}`;
+            return (
+              <Pressable
+                key={l.id}
+                onPress={() => openList(l.id)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 14,
+                  backgroundColor: t.surface,
+                  borderWidth: 1,
+                  borderColor: t.line,
+                  borderRadius: 14,
+                  padding: 13,
+                }}
               >
-                <Text style={{ fontSize: 23 }}>{l.emoji}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: t.ink, fontSize: 16, fontFamily: sansBold }}>{l.label}</Text>
-                <Text style={{ color: t.inkSoft, fontSize: 13, marginTop: 2, fontFamily: sansMed }}>
-                  {l.items.length} {l.items.length === 1 ? 'item' : 'items'}
-                </Text>
-              </View>
-              <Text style={{ color: t.inkFaint, fontSize: 24, fontFamily: sansMed }}>›</Text>
-            </Pressable>
-          ))}
+                <View
+                  style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: t.brandSoft, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 23 }}>{l.emoji}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: t.ink, fontSize: 16, fontFamily: sansBold }}>{l.label}</Text>
+                  <Text style={{ color: t.inkSoft, fontSize: 13, marginTop: 2, fontFamily: sansMed }} numberOfLines={1}>
+                    {cheapest ? (
+                      <>
+                        {nItems} · cheapest{' '}
+                        <Text style={{ color: t.brand, fontFamily: sansBold }}>
+                          {money(cheapest.total)} at {STORE_ABBR[cheapest.storeId] ?? cheapest.storeId}
+                        </Text>
+                      </>
+                    ) : (
+                      nItems
+                    )}
+                  </Text>
+                </View>
+                <Text style={{ color: t.inkFaint, fontSize: 24, fontFamily: sansMed }}>›</Text>
+              </Pressable>
+            );
+          })}
         </View>
         <Pressable onPress={() => setShowCreate(true)} style={{ alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 10, marginTop: 2 }}>
           <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>+ New list</Text>
         </Pressable>
 
-        <Text
-          style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 26, paddingHorizontal: 34, lineHeight: 18, fontFamily: sansMed }}
-        >
-          Your lists are saved on this device. Sign-in to sync across devices is coming soon.
-        </Text>
+        {configured && user ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 26, paddingHorizontal: 34 }}>
+            <Ionicons name="cloud-done-outline" size={15} color={t.brand} />
+            <Text style={{ color: t.inkSoft, fontSize: 12.5, fontFamily: sansMed }} numberOfLines={1}>
+              Synced to {user.email ?? 'your account'}
+            </Text>
+          </View>
+        ) : (
+          <Text
+            style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 26, paddingHorizontal: 34, lineHeight: 18, fontFamily: sansMed }}
+          >
+            Your lists are saved on this device.
+          </Text>
+        )}
       </ScrollView>
       <AddItemsModal visible={showAdd} onClose={() => setShowAdd(false)} storeIds={active} />
       <CreateListModal
