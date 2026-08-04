@@ -180,6 +180,15 @@ export interface CatalogHit {
   prices: { storeId: string; price: number }[]; // stores that carry it, cheapest first
 }
 
+// Strip editorial junk some stores leave inside product names — most commonly a
+// trailing "- please change" note their catalog staff never removed. Display only:
+// the raw name still keys price lookups and cross-store matching, so scrubbing the
+// text can never break a comparison. Guards against emptying the whole name.
+export function cleanName(s: string): string {
+  const out = s.replace(/\s*[-–—]?\s*please\s+change\b\.?\s*$/i, '').trim();
+  return out || s.trim();
+}
+
 // Catering/bulk items (full trays, platters, boards, whole cakes) are priced
 // correctly but wildly larger than normal groceries — a $240 tray next to a $5
 // item makes comparisons look broken. Hide them from search. (~0.9% of the catalog,

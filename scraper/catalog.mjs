@@ -153,6 +153,14 @@ const MAX_AGE = 30; // keep an unseen item for 30 days before dropping it
 
 const keyOf = (n) => String(n).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
+// Strip editorial junk stores leave inside product names — most commonly a trailing
+// "- please change" note their catalog staff never removed. Cleaned at crawl time so
+// the feed itself is tidy; the app also scrubs it defensively at display.
+const cleanName = (n) => {
+  const out = String(n).replace(/\s*[-–—]?\s*please\s+change\b\.?\s*$/i, '').trim();
+  return out || String(n).trim();
+};
+
 // Durable per-store merge — the rule that keeps the feed complete every day:
 //   • a GOOD crawl updates price/lb for what it saw and stamps last-seen = today;
 //   • items the crawl DIDN'T see are kept (with their last-known price) until they
@@ -164,7 +172,10 @@ const keyOf = (n) => String(n).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 function mergeStore(existing, crawled) {
   if (!crawled.length) return existing; // blocked/failed → keep last-good as-is
   const out = new Map();
-  for (const it of crawled) out.set(keyOf(it.n), { n: it.n, p: it.p, lb: it.lb, d: TODAY });
+  for (const it of crawled) {
+    const n = cleanName(it.n);
+    out.set(keyOf(n), { n, p: it.p, lb: it.lb, d: TODAY });
+  }
   for (const it of existing) {
     const k = keyOf(it.n);
     if (out.has(k)) continue; // fresh crawl already has it

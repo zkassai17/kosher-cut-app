@@ -34,7 +34,7 @@ import {
 } from './data';
 import { useData } from './datactx';
 import { decodeList, shareText } from './share';
-import { hasCatalog, searchCatalog } from './catalog';
+import { cleanName, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
 import { sans } from './theme';
 
@@ -138,7 +138,7 @@ export function PricesScreen() {
               {cmpHits.map((h) => (
                 <CompareRow
                   key={h.name}
-                  item={h.name}
+                  item={cleanName(h.name)}
                   unit={h.lb ? 'lb' : 'ea'}
                   storeIds={h.prices.map((p) => p.storeId)}
                   prices={h.prices.map((p) => p.price)}
@@ -155,7 +155,7 @@ export function PricesScreen() {
               {soloHits.map((h) => (
                 <CompareRow
                   key={h.name}
-                  item={h.name}
+                  item={cleanName(h.name)}
                   unit={h.lb ? 'lb' : 'ea'}
                   storeIds={h.prices.map((p) => p.storeId)}
                   prices={h.prices.map((p) => p.price)}
@@ -305,7 +305,7 @@ export function ListScreen() {
       >
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: muted ? t.inkSoft : t.ink, fontSize: 15, fontFamily: sansBold, flexShrink: 1 }}>{ln.label}</Text>
+            <Text style={{ color: muted ? t.inkSoft : t.ink, fontSize: 15, fontFamily: sansBold, flexShrink: 1 }}>{cleanName(ln.label)}</Text>
             {isTrip ? (
               <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, backgroundColor: t.goldBg }}>
                 <Text style={{ color: t.gold, fontSize: 10, fontFamily: sansBold, letterSpacing: 0.3 }}>THIS TRIP</Text>
@@ -572,7 +572,7 @@ export function AccountScreen() {
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: t.ink, fontSize: 15, fontFamily: sansBold }} numberOfLines={2}>
-                      {ln.label}
+                      {cleanName(ln.label)}
                     </Text>
                     {cheapest ? (
                       <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 3, fontFamily: sansMed }}>
@@ -1088,7 +1088,7 @@ export function AddItemsModal({
                 {cmpHits.map((h) => (
                   <CompareRow
                     key={h.name}
-                    item={h.name}
+                    item={cleanName(h.name)}
                     unit={h.lb ? 'lb' : 'ea'}
                     cat="catalog"
                     id={h.name}
@@ -1108,7 +1108,7 @@ export function AddItemsModal({
                 {soloHits.map((h) => (
                   <CompareRow
                     key={h.name}
-                    item={h.name}
+                    item={cleanName(h.name)}
                     unit={h.lb ? 'lb' : 'ea'}
                     cat="catalog"
                     id={h.name}
