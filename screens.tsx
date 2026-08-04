@@ -276,14 +276,14 @@ export function StoresScreen() {
   );
 }
 
-/* ---------- List: shop + edit the active list in one place ---------- */
+/* ---------- List: SHOP the active list — cheapest cart, quantities, check-off,
+   and one-off "just for this trip" items. Editing what's SAVED on a list (adding
+   items, rename, reset, delete) lives on the Account tab, not here. ---------- */
 export function ListScreen() {
   const { s, t } = useUI();
   const { origin, maxMiles } = useLocation();
   const basket = useBasket();
-  const [showAdd, setShowAdd] = useState(false);
   const [showTripAdd, setShowTripAdd] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   // Saved list items + "just this trip" one-offs (deduped). Trip items are
   // priced into the cart but never written to the saved list.
@@ -421,14 +421,9 @@ export function ListScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}
         >
           <ListPicker />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Pressable onPress={() => setShowOptions(true)} hitSlop={8} style={roundBtn}>
-              <Ionicons name="ellipsis-horizontal" size={18} color={t.inkSoft} />
-            </Pressable>
-            <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
-              <Text style={{ fontSize: 16, color: t.brand, marginTop: -1 }}>↗</Text>
-            </Pressable>
-          </View>
+          <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
+            <Text style={{ fontSize: 16, color: t.brand, marginTop: -1 }}>↗</Text>
+          </Pressable>
         </View>
         <Text style={s.listHint}>
           {origin.label}
@@ -439,7 +434,7 @@ export function ListScreen() {
           <View style={{ alignItems: 'center', paddingHorizontal: 40, marginTop: 40 }}>
             <Text style={{ fontSize: 44, marginBottom: 14 }}>🛒</Text>
             <Text style={{ color: t.inkSoft, fontSize: 15, textAlign: 'center', lineHeight: 22, fontFamily: sansMed }}>
-              This list is empty.{'\n'}Tap “+ Add items” below to build it.
+              This list is empty.{'\n'}Add items from the Account tab.
             </Text>
           </View>
         ) : (
@@ -497,18 +492,22 @@ export function ListScreen() {
 
             {gotLines.length ? (
               <>
-                <Text style={{ marginTop: 16, marginBottom: 2, fontSize: 12, color: t.brand, fontFamily: sansSemi, letterSpacing: 0.4 }}>
-                  GOT IT ✓
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 2 }}>
+                  <Text style={{ fontSize: 12, color: t.brand, fontFamily: sansSemi, letterSpacing: 0.4 }}>GOT IT ✓</Text>
+                  <Pressable onPress={() => basket.clearChecks()} hitSlop={8}>
+                    <Text style={{ fontSize: 12.5, color: t.inkSoft, fontFamily: sansSemi }}>Uncheck all</Text>
+                  </Pressable>
+                </View>
                 {gotLines.map((ln) => renderLine(ln, true))}
               </>
             ) : null}
           </View>
         )}
 
-        {/* Add items → saves to this list */}
+        {/* The List page only adds one-off items for THIS trip. To change what's
+            saved on the list, use "+ Add" on the Account tab. */}
         <Pressable
-          onPress={() => setShowAdd(true)}
+          onPress={() => setShowTripAdd(true)}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -524,17 +523,13 @@ export function ListScreen() {
           }}
         >
           <Text style={{ color: t.brand, fontSize: 18, fontFamily: sansBold, marginTop: -2 }}>+</Text>
-          <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Add items</Text>
+          <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Add just for this trip</Text>
         </Pressable>
-
-        {/* Add a one-off just for this trip (not saved to the list) */}
-        <Pressable onPress={() => setShowTripAdd(true)} style={{ alignSelf: 'center', marginTop: 10, padding: 6 }}>
-          <Text style={{ color: t.inkSoft, fontSize: 13.5, fontFamily: sansSemi }}>+ Just for this trip</Text>
-        </Pressable>
+        <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 17, fontFamily: sansMed }}>
+          To add items to this saved list, use “+ Add” on the Account tab.
+        </Text>
       </ScrollView>
-      <AddItemsModal visible={showAdd} onClose={() => setShowAdd(false)} storeIds={active} />
       <AddItemsModal visible={showTripAdd} onClose={() => setShowTripAdd(false)} storeIds={active} temp />
-      <ListOptionsSheet visible={showOptions} onClose={() => setShowOptions(false)} />
     </View>
   );
 }
@@ -551,6 +546,7 @@ export function AccountScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
 
@@ -576,6 +572,11 @@ export function AccountScreen() {
   const editList = (id: string) => {
     basket.setActive(id);
     setShowAdd(true);
+  };
+  // The ⋯ on a card manages the list (rename, emoji, reset/delete, uncheck all).
+  const openOptions = (id: string) => {
+    basket.setActive(id);
+    setShowOptions(true);
   };
 
   return (
@@ -753,7 +754,9 @@ export function AccountScreen() {
                   <Text style={{ color: t.brand, fontSize: 15, fontFamily: sansBold, marginTop: -2 }}>+</Text>
                   <Text style={{ color: t.brand, fontSize: 13, fontFamily: sansBold }}>Add</Text>
                 </Pressable>
-                <Text style={{ color: t.inkFaint, fontSize: 24, fontFamily: sansMed }}>›</Text>
+                <Pressable onPress={() => openOptions(l.id)} hitSlop={8} style={{ padding: 4 }}>
+                  <Ionicons name="ellipsis-horizontal" size={20} color={t.inkFaint} />
+                </Pressable>
               </Pressable>
             );
           })}
@@ -787,6 +790,7 @@ export function AccountScreen() {
         }}
       />
       <AddItemsModal visible={showRegAdd} onClose={() => setShowRegAdd(false)} storeIds={active} regular />
+      <ListOptionsSheet visible={showOptions} onClose={() => setShowOptions(false)} />
       <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)} />
     </View>
   );
