@@ -63,7 +63,8 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   const [tempByList, setTempByList] = useState<Record<string, BasketItem[]>>({});
   const [regulars, setRegulars] = useState<BasketItem[]>([]);
   const hydrated = useRef(false);
-  const syncedUser = useRef<string | null>(null); // whose cloud data we've pulled
+  const syncedUser = useRef<string | null>(null); // whose cloud pull we've STARTED
+  const pulledUser = useRef<string | null>(null); // whose cloud pull has FINISHED (safe to push)
 
   // Load saved lists + regulars once on startup.
   useEffect(() => {
@@ -103,6 +104,7 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) {
       syncedUser.current = null;
+      pulledUser.current = null;
       return;
     }
     if (syncedUser.current === user.id) return;
@@ -118,6 +120,9 @@ export function BasketProvider({ children }: { children: ReactNode }) {
       } else {
         pushUserData(user.id, lists, regulars); // first sign-in on this account — seed from local
       }
+      // Only NOW is it safe to push local edits — before this, a fast local change
+      // could have overwritten the cloud copy we were still fetching.
+      pulledUser.current = user.id;
     })();
     return () => {
       alive = false;
@@ -125,9 +130,10 @@ export function BasketProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Push changes up (debounced) once we've pulled this user's data.
+  // Push changes up (debounced) — but ONLY after this user's pull has finished,
+  // so we never clobber their synced data with whatever was on this device first.
   useEffect(() => {
-    if (!user || syncedUser.current !== user.id) return;
+    if (!user || pulledUser.current !== user.id) return;
     const t = setTimeout(() => pushUserData(user.id, lists, regulars), 800);
     return () => clearTimeout(t);
   }, [lists, regulars, user]);
