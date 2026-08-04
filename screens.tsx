@@ -963,13 +963,22 @@ export function AddItemsModal({
         }
       : {};
 
+  // Pick stores PER CATEGORY out of your shopping stores — like the Prices tab —
+  // so a store that doesn't stock a category never appears as an empty "—" column
+  // here (which reads as "missing"). Because it's a subset of the same stores the
+  // List cart uses, the two screens can never disagree about what's available.
+  const storesForCat = (catKey: string) => storeIds.filter((id) => storeHasCategoryData(id, catKey));
   // When searching, match items across every category; else the selected one.
   const blocks = (query ? LIVE_CATEGORIES : LIVE_CATEGORIES.filter((c) => c.key === cat))
-    .map((c) => ({
-      cat: c,
-      rows: compRows(c.key, storeIds).filter((r) => (query ? r.item.toLowerCase().includes(query) : true)),
-    }))
-    .filter((b) => b.rows.length);
+    .map((c) => {
+      const ids = storesForCat(c.key);
+      return {
+        cat: c,
+        ids,
+        rows: compRows(c.key, ids).filter((r) => (query ? r.item.toLowerCase().includes(query) : true)),
+      };
+    })
+    .filter((b) => b.rows.length && b.ids.length);
 
   // Searching also reaches the FULL catalog, so you can add any product (a
   // specific dressing, dip, cereal…) to your list — not just the curated cuts.
@@ -1020,25 +1029,57 @@ export function AddItemsModal({
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: insets.bottom + 30, paddingTop: 4 }}
         >
-          {blocks.map((b) => (
-            <View key={b.cat.key}>
-              {query ? <Text style={s.listHint}>{b.cat.label}</Text> : null}
-              <View style={{ paddingHorizontal: 18 }}>
-                {b.rows.map((r) => (
-                  <CompareRow
-                    key={`${r.cat}-${r.id}`}
-                    item={r.item}
-                    unit={r.unit}
-                    cat={r.cat}
-                    id={r.id}
-                    storeIds={storeIds}
-                    prices={r.prices}
-                    {...rowExtra(r.cat, r.id)}
-                  />
-                ))}
+          {blocks.map((b) => {
+            // Same split as the Prices tab: real head-to-heads (2+ stores) lead;
+            // items only one store carries go in a clean "Only at one store" group
+            // (shown as a plain price, never an empty dash).
+            const priced = (r: (typeof b.rows)[number]) => r.prices.filter((p) => p != null).length;
+            const split = b.ids.length >= 2;
+            const cmp = split ? b.rows.filter((r) => priced(r) >= 2) : b.rows;
+            const solo = split ? b.rows.filter((r) => priced(r) < 2) : [];
+            return (
+              <View key={b.cat.key}>
+                {query ? <Text style={s.listHint}>{b.cat.label}</Text> : null}
+                <View style={{ paddingHorizontal: 18 }}>
+                  {cmp.map((r) => (
+                    <CompareRow
+                      key={`${r.cat}-${r.id}`}
+                      item={r.item}
+                      unit={r.unit}
+                      cat={r.cat}
+                      id={r.id}
+                      storeIds={b.ids}
+                      prices={r.prices}
+                      {...rowExtra(r.cat, r.id)}
+                    />
+                  ))}
+                </View>
+                {solo.length ? (
+                  <>
+                    <Text style={[s.listHint, { marginTop: 10 }]}>Only at one store</Text>
+                    <View style={{ paddingHorizontal: 18 }}>
+                      {solo.map((r) => {
+                        const i = r.prices.findIndex((p) => p != null);
+                        return (
+                          <CompareRow
+                            key={`${r.cat}-${r.id}`}
+                            item={r.item}
+                            unit={r.unit}
+                            cat={r.cat}
+                            id={r.id}
+                            storeIds={[b.ids[i]]}
+                            prices={[r.prices[i]]}
+                            soloClean
+                            {...rowExtra(r.cat, r.id)}
+                          />
+                        );
+                      })}
+                    </View>
+                  </>
+                ) : null}
               </View>
-            </View>
-          ))}
+            );
+          })}
 
           {query && cmpHits.length ? (
             <>
