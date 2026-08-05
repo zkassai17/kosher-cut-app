@@ -815,10 +815,15 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   const { origin, maxMiles, autoLocate, hiddenStores, gpsStatus, setArea, setMaxMiles, setAutoLocate, toggleStore, setAddress, reset } =
     useLocation();
   const basket = useBasket();
-  const { user, signOut, deleteAccount: deleteServerAccount } = useAuth();
+  const { user, signOut, deleteAccount: deleteServerAccount, setEmailUpdates } = useAuth();
   const insets = useSafeAreaInsets();
   const [addr, setAddr] = useState('');
   const [legal, setLegal] = useState<LegalDoc | null>(null);
+  // Weekly-updates opt-in — default ON unless the user explicitly turned it off.
+  const [emailOptIn, setEmailOptIn] = useState((user?.user_metadata as any)?.emailUpdates !== false);
+  useEffect(() => {
+    if (visible) setEmailOptIn((user?.user_metadata as any)?.emailUpdates !== false);
+  }, [visible, user]);
   const shopStores = areaStores(origin, maxMiles).filter((st) => hasCatalog(st.id));
 
   const logout = () => {
@@ -1069,6 +1074,25 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
                   </View>
                 </View>
               ) : null}
+              {user ? (
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.line }}
+                >
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.semi }}>Weekly email updates</Text>
+                    <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 1, fontFamily: sans.med }}>Deals &amp; new features. Unsubscribe anytime.</Text>
+                  </View>
+                  <Switch
+                    value={emailOptIn}
+                    onValueChange={(v) => {
+                      setEmailOptIn(v);
+                      setEmailUpdates(v);
+                    }}
+                    trackColor={{ true: t.brand, false: t.line }}
+                    thumbColor="#fff"
+                  />
+                </View>
+              ) : null}
               <Pressable onPress={logout} style={{ paddingHorizontal: 14, paddingVertical: 15 }}>
                 <Text style={{ color: t.ink, fontSize: 15, fontFamily: sans.semi }}>Log out</Text>
               </Pressable>
@@ -1142,6 +1166,7 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [wantsUpdates, setWantsUpdates] = useState(true); // weekly-updates opt-in (sign-up)
 
   const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const submit = async () => {
@@ -1154,7 +1179,7 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
       return;
     }
     setBusy(true);
-    const res = mode === 'in' ? await signIn(email, password) : await signUp(email, password);
+    const res = mode === 'in' ? await signIn(email, password) : await signUp(email, password, wantsUpdates);
     setBusy(false);
     if (res.error) return setError(res.error);
     if (res.needsConfirmation) {
@@ -1249,6 +1274,27 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
                 secureTextEntry
                 style={field}
               />
+              {mode === 'up' ? (
+                <Pressable onPress={() => setWantsUpdates((v) => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 }}>
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 6,
+                      borderWidth: 2,
+                      borderColor: wantsUpdates ? t.brand : t.line,
+                      backgroundColor: wantsUpdates ? t.brand : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {wantsUpdates ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+                  </View>
+                  <Text style={{ flex: 1, color: t.inkSoft, fontSize: 13.5, fontFamily: sans.med, lineHeight: 18 }}>
+                    Email me weekly deals &amp; updates (unsubscribe anytime)
+                  </Text>
+                </Pressable>
+              ) : null}
               {error ? <Text style={{ color: t.oxblood, fontSize: 13, fontFamily: sans.med, alignSelf: 'flex-start', marginTop: 10 }}>{error}</Text> : null}
 
               <Pressable

@@ -35,10 +35,11 @@ interface AuthState {
   session: Session | null;
   user: User | null;
   signIn: (email: string, password: string) => Promise<AuthResult>;
-  signUp: (email: string, password: string) => Promise<AuthResult>;
+  signUp: (email: string, password: string, emailUpdates?: boolean) => Promise<AuthResult>;
   signInWithGoogle: () => Promise<AuthResult>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<AuthResult>; // deletes the server user + data, then signs out
+  setEmailUpdates: (v: boolean) => Promise<void>; // weekly-updates opt-in (stored on the user)
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -76,9 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         return { error: error?.message };
       },
-      signUp: async (email, password) => {
+      signUp: async (email, password, emailUpdates = true) => {
         if (!supabase) return { error: 'Accounts aren’t set up yet.' };
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+        // Store the weekly-updates opt-in on the user (auth.users.user_metadata) so
+        // you can later export everyone who opted in.
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { data: { emailUpdates } },
+        });
         if (error) return { error: error.message };
         return { needsConfirmation: !data.session }; // no session back = must confirm via email
       },
@@ -117,6 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {}
         await supabase.auth.signOut();
         return {};
+      },
+      setEmailUpdates: async (v) => {
+        try {
+          await supabase?.auth.updateUser({ data: { emailUpdates: v } });
+        } catch {}
       },
     }),
     [session, loading],
