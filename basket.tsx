@@ -22,6 +22,7 @@ const STORAGE_KEY = 'kc.lists.v1';
 const ACTIVE_KEY = 'kc.activeList.v1';
 const REGULARS_KEY = 'kc.regulars.v1';
 const CHECKED_KEY = 'kc.checked.v1'; // "got it" marks, per list — device-local, not synced
+const OWNER_KEY = 'kc.owner.v1'; // which account the on-device lists belong to (isolation)
 
 const itemKey = (cat: string, id: string) => `${cat}:${id}`;
 
@@ -79,17 +80,24 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   const hydrated = useRef(false);
   const syncedUser = useRef<string | null>(null); // whose cloud pull we've STARTED
   const pulledUser = useRef<string | null>(null); // whose cloud pull has FINISHED (safe to push)
+  const ownerRef = useRef<string | null>(null); // account the on-device data belongs to
+  const setOwner = (id: string) => {
+    ownerRef.current = id;
+    AsyncStorage.setItem(OWNER_KEY, id).catch(() => {});
+  };
 
   // Load saved lists + regulars once on startup.
   useEffect(() => {
     (async () => {
       try {
-        const [rawLists, rawActive, rawReg, rawChecked] = await Promise.all([
+        const [rawLists, rawActive, rawReg, rawChecked, rawOwner] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(ACTIVE_KEY),
           AsyncStorage.getItem(REGULARS_KEY),
           AsyncStorage.getItem(CHECKED_KEY),
+          AsyncStorage.getItem(OWNER_KEY),
         ]);
+        if (rawOwner) ownerRef.current = rawOwner;
         if (rawChecked) setCheckedByList(JSON.parse(rawChecked));
         if (rawLists) {
           const stored: NamedList[] = JSON.parse(rawLists);
@@ -125,17 +133,33 @@ export function BasketProvider({ children }: { children: ReactNode }) {
     }
     if (syncedUser.current === user.id) return;
     syncedUser.current = user.id;
+    // Is this a DIFFERENT account than the on-device data belongs to? (owner is
+    // null only before anyone has ever signed in on this device.)
+    const switchingAccount = ownerRef.current != null && ownerRef.current !== user.id;
     let alive = true;
     (async () => {
       const remote = await pullUserData(user.id);
       if (!alive) return;
       if (remote && remote.lists.length) {
+        // This account has cloud data — load it (and drop the previous trip's checks).
         setLists(remote.lists);
         setActiveId(remote.lists[0]?.id ?? PRESETS[0].id);
         setRegulars(remote.regulars);
+        if (switchingAccount) setCheckedByList({});
+      } else if (switchingAccount) {
+        // A different account with no cloud data yet → start FRESH. Never inherit the
+        // previous account's lists just because they're still on this device.
+        const fresh = seedLists();
+        setLists(fresh);
+        setActiveId(PRESETS[0].id);
+        setRegulars([]);
+        setCheckedByList({});
+        pushUserData(user.id, fresh, []);
       } else {
-        pushUserData(user.id, lists, regulars); // first sign-in on this account — seed from local
+        // First-ever sign-in on this device — seed the account from whatever's local.
+        pushUserData(user.id, lists, regulars);
       }
+      setOwner(user.id); // the on-device data now belongs to this account
       // Only NOW is it safe to push local edits — before this, a fast local change
       // could have overwritten the cloud copy we were still fetching.
       pulledUser.current = user.id;
