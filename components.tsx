@@ -1124,8 +1124,9 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
   const { t } = useUI();
   const { configured, signIn, signUp, signInWithGoogle } = useAuth();
   // Google OAuth needs a real build (custom URL scheme) — it can't complete in
-  // Expo Go and would dead-end a tester. Hidden while distributing via Expo Go;
-  // flip to true once you ship an EAS/dev build.
+  // Expo Go and would dead-end a tester. DEFERRED TO v2: kept wired but hidden for
+  // now. To turn on in v2: ship an EAS/dev build, ROTATE the exposed Google client
+  // secret first, then flip this to true.
   const GOOGLE_SIGNIN_ENABLED = false;
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'in' | 'up'>('in');
