@@ -453,14 +453,22 @@ export function ListPicker({ onPick, unset }: { onPick?: () => void; unset?: boo
                     onPick?.();
                     setOpen(false);
                   }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11 }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingHorizontal: 14,
+                    paddingVertical: 11,
+                    backgroundColor: on ? t.brandSoft : 'transparent',
+                  }}
                 >
                   <Text style={{ fontSize: 18 }}>{l.emoji}</Text>
                   <Text style={{ flex: 1, color: t.ink, fontSize: 15, fontFamily: on ? sans.bold : sans.med }}>
                     {l.label}
                   </Text>
-                  <Text style={{ color: t.inkFaint, fontSize: 12.5, fontFamily: sans.med }}>{l.items.length}</Text>
-                  {on ? <Text style={{ color: t.brand, fontSize: 15, fontFamily: sans.bold }}>✓</Text> : null}
+                  <Text style={{ color: t.inkSoft, fontSize: 12.5, fontFamily: sans.med }}>
+                    {l.items.length} {l.items.length === 1 ? 'item' : 'items'}
+                  </Text>
                 </Pressable>
               );
             })}

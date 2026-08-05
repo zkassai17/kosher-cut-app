@@ -297,7 +297,6 @@ export function ListScreen() {
   const { origin, maxMiles } = useLocation();
   const basket = useBasket();
   const [showTripAdd, setShowTripAdd] = useState(false);
-  const [chosen, setChosen] = useState(false); // List tab stays empty until a list is picked
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   // Saved list items + "just this trip" one-offs (deduped). Trip items are
   // priced into the cart but never written to the saved list.
@@ -437,20 +436,13 @@ export function ListScreen() {
             {origin.label}
             {active.length ? ` · ${active.map((id) => STORE_ABBR[id] ?? id).join(' · ')}` : ''}
           </Text>
-          <ListPicker unset={!chosen} onPick={() => setChosen(true)} />
+          <ListPicker />
           <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
             <Text style={{ fontSize: 16, color: t.brand, marginTop: -1 }}>↗</Text>
           </Pressable>
         </View>
 
-        {!chosen ? (
-          <View style={{ alignItems: 'center', paddingHorizontal: 40, marginTop: 70 }}>
-            <Text style={{ fontSize: 44, marginBottom: 14 }}>🛒</Text>
-            <Text style={{ color: t.inkSoft, fontSize: 15, textAlign: 'center', lineHeight: 22, fontFamily: sansMed }}>
-              Pick a list up top to start shopping.
-            </Text>
-          </View>
-        ) : empty ? (
+        {empty ? (
           <View style={{ alignItems: 'center', paddingHorizontal: 40, marginTop: 40 }}>
             <Text style={{ fontSize: 44, marginBottom: 14 }}>🛒</Text>
             <Text style={{ color: t.inkSoft, fontSize: 15, textAlign: 'center', lineHeight: 22, fontFamily: sansMed }}>
@@ -524,34 +516,30 @@ export function ListScreen() {
           </View>
         )}
 
-        {/* Once a list is picked: the List page only adds one-off items for THIS trip.
-            To change what's saved on the list, use "+ Add" on the Account tab. */}
-        {chosen ? (
-          <>
-            <Pressable
-              onPress={() => setShowTripAdd(true)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                marginHorizontal: 18,
-                marginTop: empty ? 24 : 16,
-                borderWidth: 1.5,
-                borderColor: t.brand,
-                borderStyle: 'dashed',
-                borderRadius: 14,
-                paddingVertical: 14,
-              }}
-            >
-              <Text style={{ color: t.brand, fontSize: 18, fontFamily: sansBold, marginTop: -2 }}>+</Text>
-              <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Add just for this trip</Text>
-            </Pressable>
-            <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 17, fontFamily: sansMed }}>
-              To add items to this saved list, use “+ Add” on the Account tab.
-            </Text>
-          </>
-        ) : null}
+        {/* The List page only adds one-off items for THIS trip. To change what's
+            saved on the list, use "+ Add" on the Account tab. */}
+        <Pressable
+          onPress={() => setShowTripAdd(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            marginHorizontal: 18,
+            marginTop: empty ? 24 : 16,
+            borderWidth: 1.5,
+            borderColor: t.brand,
+            borderStyle: 'dashed',
+            borderRadius: 14,
+            paddingVertical: 14,
+          }}
+        >
+          <Text style={{ color: t.brand, fontSize: 18, fontFamily: sansBold, marginTop: -2 }}>+</Text>
+          <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Add just for this trip</Text>
+        </Pressable>
+        <Text style={{ color: t.inkFaint, fontSize: 12, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 17, fontFamily: sansMed }}>
+          To add items to this saved list, use “+ Add” on the Account tab.
+        </Text>
       </ScrollView>
       <AddItemsModal visible={showTripAdd} onClose={() => setShowTripAdd(false)} storeIds={active} temp />
     </View>

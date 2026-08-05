@@ -57,6 +57,7 @@ function Tabs() {
     <NavigationContainer theme={navTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Tab.Navigator
+        initialRouteName="Prices"
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: t.brand,
