@@ -45,7 +45,7 @@ const sansSemi = sans.semi;
 
 /* ---------- Prices (main): pick a category → every item compared ---------- */
 export function PricesScreen() {
-  const { s } = useUI();
+  const { s, t } = useUI();
   const { origin, maxMiles } = useLocation();
   const { updatedAt } = useData();
   const [cat, setCat] = useState('chicken');
@@ -78,14 +78,28 @@ export function PricesScreen() {
 
   return (
     <View style={s.root}>
-      <FeedHeader onDeals={() => setShowDeals(true)} />
+      <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 36, paddingTop: 4 }}>
         <SearchBar value={q} onChange={setQ} />
         <Text style={[s.listHint, { marginBottom: 2 }]}>Prices updated {updatedAt}</Text>
 
         {!query ? (
           <View style={{ marginTop: 4 }}>
-            <PillTabs value={cat} onChange={setCat} options={LIVE_CATEGORIES.map((c) => ({ key: c.key, label: c.label }))} />
+            <PillTabs
+              value={cat}
+              onChange={setCat}
+              options={LIVE_CATEGORIES.map((c) => ({ key: c.key, label: c.label }))}
+              trailing={
+                <Pressable
+                  onPress={() => setShowDeals(true)}
+                  hitSlop={6}
+                  style={[s.fchip, { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.goldBg, borderColor: t.gold }]}
+                >
+                  <Text style={{ fontSize: 13 }}>🔥</Text>
+                  <Text style={[s.fchipText, { color: t.gold }]}>Deals</Text>
+                </Pressable>
+              }
+            />
           </View>
         ) : null}
 

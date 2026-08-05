@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -632,7 +632,7 @@ export function BrandMark({ size = 21 }: { size?: number }) {
   );
 }
 
-export function FeedHeader({ onDeals }: { onDeals?: () => void }) {
+export function FeedHeader() {
   const { s, t } = useUI();
   const { origin } = useLocation();
   const insets = useSafeAreaInsets();
@@ -641,33 +641,15 @@ export function FeedHeader({ onDeals }: { onDeals?: () => void }) {
     <View style={[s.feedHeaderWrap, { paddingTop: insets.top + 8 }]}>
       <View style={s.brandRow}>
         <BrandMark />
-        {onDeals ? (
-          <Pressable style={s.dealsBtn} onPress={onDeals} hitSlop={8}>
-            <Text style={{ fontSize: 14 }}>🔥</Text>
-            <Text style={s.dealsBtnText}>Deals</Text>
-          </Pressable>
-        ) : (
-          // No Deals button here (all tabs except Prices) → location sits top-right.
-          <Pressable
-            style={[s.feedAddr, { flexShrink: 1, marginLeft: 12 }]}
-            onPress={() => setOpen(true)}
-            hitSlop={8}
-          >
-            <Ionicons name="location-sharp" size={13} color={t.brand} style={{ marginRight: 3 }} />
-            <Text numberOfLines={1} style={[s.feedAddrText, { fontSize: 15 }]}>
-              {origin.label}
-            </Text>
-            <Text style={s.feedChevron}>▾</Text>
-          </Pressable>
-        )}
-      </View>
-      {onDeals ? (
-        <Pressable style={[s.feedAddr, { marginTop: 12 }]} onPress={() => setOpen(true)} hitSlop={8}>
+        {/* Location lives in the top-right corner on every tab. */}
+        <Pressable style={[s.feedAddr, { flexShrink: 1, marginLeft: 12 }]} onPress={() => setOpen(true)} hitSlop={8}>
           <Ionicons name="location-sharp" size={13} color={t.brand} style={{ marginRight: 3 }} />
-          <Text style={s.feedAddrText}>{origin.label}</Text>
+          <Text numberOfLines={1} style={[s.feedAddrText, { fontSize: 15 }]}>
+            {origin.label}
+          </Text>
           <Text style={s.feedChevron}>▾</Text>
         </Pressable>
-      ) : null}
+      </View>
       <LocationModal visible={open} onClose={() => setOpen(false)} />
     </View>
   );
@@ -1312,16 +1294,18 @@ export function PillTabs({
   value,
   onChange,
   options,
+  trailing,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { key: string; label: string }[];
+  trailing?: ReactNode; // optional action pill rendered at the end of the row (e.g. Deals)
 }) {
   const { s } = useUI();
   // Few tabs → split the row evenly (full width). Many → horizontal scroll.
   if (options.length <= 4) {
     return (
-      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 18, paddingVertical: 4 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 4 }}>
         {options.map((o) => {
           const active = o.key === value;
           return (
@@ -1334,6 +1318,7 @@ export function PillTabs({
             </Pressable>
           );
         })}
+        {trailing}
       </View>
     );
   }
@@ -1347,6 +1332,7 @@ export function PillTabs({
           </Pressable>
         );
       })}
+      {trailing}
     </ScrollView>
   );
 }
