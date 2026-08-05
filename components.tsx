@@ -1302,8 +1302,10 @@ export function PillTabs({
   trailing?: ReactNode; // optional action pill rendered at the end of the row (e.g. Deals)
 }) {
   const { s } = useUI();
-  // Few tabs → split the row evenly (full width). Many → horizontal scroll.
-  if (options.length <= 4) {
+  // Few tabs and no extra action → split the row evenly (full width). Otherwise
+  // (many tabs, or a trailing Deals pill) use content-sized chips so nothing gets
+  // squeezed into a two-line label.
+  if (options.length <= 4 && !trailing) {
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 4 }}>
         {options.map((o) => {
