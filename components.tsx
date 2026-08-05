@@ -1140,6 +1140,10 @@ export function LegalModal({ doc, onClose }: { doc: LegalDoc | null; onClose: ()
 export function SignInModal({ visible, onClose, gate }: { visible: boolean; onClose: () => void; gate?: boolean }) {
   const { t } = useUI();
   const { configured, signIn, signUp, signInWithGoogle } = useAuth();
+  // Google OAuth needs a real build (custom URL scheme) — it can't complete in
+  // Expo Go and would dead-end a tester. Hidden while distributing via Expo Go;
+  // flip to true once you ship an EAS/dev build.
+  const GOOGLE_SIGNIN_ENABLED = false;
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
@@ -1267,14 +1271,16 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
                 )}
               </Pressable>
 
-              <Pressable
-                onPress={google}
-                disabled={busy}
-                style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, marginTop: 12, opacity: busy ? 0.7 : 1 }}
-              >
-                <Ionicons name="logo-google" size={18} color={t.ink} />
-                <Text style={{ color: t.ink, fontFamily: sans.semi, fontSize: 15 }}>Continue with Google</Text>
-              </Pressable>
+              {GOOGLE_SIGNIN_ENABLED ? (
+                <Pressable
+                  onPress={google}
+                  disabled={busy}
+                  style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10, marginTop: 12, opacity: busy ? 0.7 : 1 }}
+                >
+                  <Ionicons name="logo-google" size={18} color={t.ink} />
+                  <Text style={{ color: t.ink, fontFamily: sans.semi, fontSize: 15 }}>Continue with Google</Text>
+                </Pressable>
+              ) : null}
 
               <Text style={{ color: t.inkFaint, fontSize: 12.5, marginTop: 20, fontFamily: sans.med }}>
                 {mode === 'in' ? "Don't have an account? " : 'Already have an account? '}
