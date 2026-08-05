@@ -378,7 +378,7 @@ export function ListChips() {
 
 /* The active-list name as a dropdown — tap it to pick another list from a menu
    that opens right beneath it. (Used alongside the pills on the List tab.) */
-export function ListPicker() {
+export function ListPicker({ onPick, unset }: { onPick?: () => void; unset?: boolean } = {}) {
   const { t } = useUI();
   const { lists, activeId, active, setActive } = useBasket();
   const [open, setOpen] = useState(false);
@@ -415,9 +415,9 @@ export function ListPicker() {
           borderColor: t.line,
         }}
       >
-        <Text style={{ fontSize: 15 }}>{active.emoji}</Text>
-        <Text style={{ color: t.ink, fontFamily: sans.bold, fontSize: 14 }} numberOfLines={1}>
-          {active.label}
+        <Text style={{ fontSize: 15 }}>{unset ? '🛒' : active.emoji}</Text>
+        <Text style={{ color: unset ? t.inkSoft : t.ink, fontFamily: sans.bold, fontSize: 14 }} numberOfLines={1}>
+          {unset ? 'Choose a list' : active.label}
         </Text>
         <Text style={{ color: t.inkFaint, fontSize: 12 }}>▾</Text>
       </Pressable>
@@ -450,6 +450,7 @@ export function ListPicker() {
                   key={l.id}
                   onPress={() => {
                     setActive(l.id);
+                    onPick?.();
                     setOpen(false);
                   }}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11 }}
