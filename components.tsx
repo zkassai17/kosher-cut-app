@@ -1218,6 +1218,7 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [wantsUpdates, setWantsUpdates] = useState(true); // weekly-updates opt-in (sign-up)
+  const [legal, setLegal] = useState<LegalDoc | null>(null); // Terms/Privacy viewer
 
   const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const submit = async () => {
@@ -1360,6 +1361,20 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
                 )}
               </Pressable>
 
+              {mode === 'up' ? (
+                <Text style={{ color: t.inkFaint, fontSize: 11.5, marginTop: 12, textAlign: 'center', lineHeight: 16, fontFamily: sans.med, paddingHorizontal: 4 }}>
+                  By signing up, you agree to our{' '}
+                  <Text style={{ color: t.brand, fontFamily: sans.bold }} onPress={() => setLegal(TERMS)}>
+                    Terms of Use
+                  </Text>{' '}
+                  and{' '}
+                  <Text style={{ color: t.brand, fontFamily: sans.bold }} onPress={() => setLegal(PRIVACY)}>
+                    Privacy Policy
+                  </Text>
+                  .
+                </Text>
+              ) : null}
+
               {GOOGLE_SIGNIN_ENABLED ? (
                 <Pressable
                   onPress={google}
@@ -1391,6 +1406,7 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
+      <LegalModal doc={legal} onClose={() => setLegal(null)} />
     </Modal>
   );
 }
