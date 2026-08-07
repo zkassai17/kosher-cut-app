@@ -114,7 +114,7 @@ export function Segmented({
   );
 }
 
-type PillState = 'win' | 'lose' | 'tie' | 'none';
+type PillState = 'win' | 'lose' | 'tie' | 'none' | 'pkg';
 
 function PricePill({ label, price, state }: { label: string; price: number | null; state: PillState }) {
   const { s } = useUI();
@@ -138,6 +138,7 @@ function PricePill({ label, price, state }: { label: string; price: number | nul
         </Pop>
       )}
       {state === 'tie' && <Text style={s.pillFlagMuted}>TIE</Text>}
+      {state === 'pkg' && <Text style={s.pillFlagMuted}>pkg</Text>}
     </View>
   );
 }
@@ -181,6 +182,7 @@ export function CompareRow({
   checked,
   onToggle,
   soloClean,
+  pkgFlags,
 }: {
   item: string;
   unit: Unit;
@@ -191,6 +193,7 @@ export function CompareRow({
   checked?: boolean; // override the ✓ state (e.g. "this trip" picker)
   onToggle?: () => void; // override the add/remove action
   soloClean?: boolean; // single-store row shown under an "only at one store" header — drop the redundant caption
+  pkgFlags?: boolean[]; // parallel to storeIds: true = a package price (not per-lb), shown for reference only
 }) {
   const { s, t } = useUI();
   const basket = useBasket();
@@ -210,17 +213,28 @@ export function CompareRow({
     wasIn.current = inList;
   }, [inList, checkPop]);
 
-  const valid = prices.filter((p): p is number => p != null);
-  const min = valid.length ? Math.min(...valid) : null;
-  const sorted = [...valid].sort((a, b) => a - b);
+  // Package-priced columns (e.g. KMP meat) are shown for reference but excluded
+  // from the per-lb comparison — their number isn't per pound, so it can't win,
+  // lose, or drive a "Save $X/lb".
+  const cmpPrices = prices.map((p, i) => (pkgFlags?.[i] ? null : p));
+  const cmpValid = cmpPrices.filter((p): p is number => p != null);
+  const min = cmpValid.length ? Math.min(...cmpValid) : null;
+  const sorted = [...cmpValid].sort((a, b) => a - b);
   const save = sorted.length >= 2 && sorted[0] < sorted[1] ? sorted[1] - sorted[0] : 0;
-  const winnerIdx = min != null ? prices.indexOf(min) : -1;
-  const multi = valid.length >= 2;
+  const winnerIdx = min != null ? cmpPrices.indexOf(min) : -1;
+  const multi = cmpValid.length >= 2; // 2+ comparable (per-lb) prices
+  const anyCount = prices.filter((p) => p != null).length;
 
   let caption = '';
-  if (!multi) caption = winnerIdx >= 0 ? `Only ${STORE_ABBR[storeIds[winnerIdx]]} lists this` : '';
-  else if (save === 0) caption = 'Same price';
-  else caption = `Save ${money(save)}${unitSuffix(unit)} at ${STORE_ABBR[storeIds[winnerIdx]]}`;
+  if (anyCount <= 1) {
+    const onlyIdx = prices.findIndex((p) => p != null);
+    caption = onlyIdx >= 0 ? `Only ${STORE_ABBR[storeIds[onlyIdx]]} lists this` : '';
+  } else if (multi && save === 0) {
+    caption = 'Same price';
+  } else if (multi && save > 0) {
+    caption = `Save ${money(save)}${unitSuffix(unit)} at ${STORE_ABBR[storeIds[winnerIdx]]}`;
+  }
+  // else: one per-lb price + a package price → no comparison caption (the "pkg" tag explains it).
 
   const reportPrice = () =>
     Alert.alert('Report a price', `Flag a wrong price for "${item}"? We'll re-check it at the store.`, [
@@ -275,8 +289,19 @@ export function CompareRow({
           // Only one store lists it → neutral (no BEST/TIE flag; caption says "Only X").
           // Two+ stores: cheapest = BEST, unless the two cheapest are equal → TIE.
           const isTie = multi && save === 0;
-          const state: PillState =
-            p == null ? 'none' : !multi ? 'none' : p === min ? (isTie ? 'tie' : 'win') : 'lose';
+          const state: PillState = pkgFlags?.[i]
+            ? p == null
+              ? 'none'
+              : 'pkg' // package price — neutral, tagged "pkg", never BEST/lose
+            : p == null
+            ? 'none'
+            : !multi
+            ? 'none'
+            : p === min
+            ? isTie
+              ? 'tie'
+              : 'win'
+            : 'lose';
           return <PricePill key={sid} label={STORE_ABBR[sid] ?? sid} price={p} state={state} />;
         })}
       </View>

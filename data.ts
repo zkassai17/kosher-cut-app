@@ -2,10 +2,16 @@
 // prices.ts. A row shows each store's price for an item — or null ("—") when a
 // store doesn't list it yet.
 
-import { CATEGORIES, itemMeta, money, priceOf, PRICES, Unit, unitSuffix } from './prices';
+import { CATEGORIES, isPackagePriced, itemMeta, money, priceOf, PRICES, Unit, unitSuffix } from './prices';
+
+// Price for a per-lb COMPARISON — package-priced stores (KMP meat) return null so
+// they never pollute a per-lb total/deal; they're still shown for reference on the
+// Prices tab, tagged "pkg".
+const comparablePriceOf = (storeId: string, cat: string, item: string): number | null =>
+  isPackagePriced(storeId, cat) ? null : priceOf(storeId, cat, item);
 import { catalogIsLb, catalogPriceOf } from './catalog';
 
-export { money, unitSuffix };
+export { money, unitSuffix, isPackagePriced };
 
 export type StoreId = 'ge' | 'gl';
 
@@ -51,13 +57,10 @@ export const STORE_ABBR: Record<string, string> = {
 export const storeHasData = (storeId: string): boolean =>
   !!PRICES[storeId] && CATEGORIES.some((c) => Object.keys(PRICES[storeId][c.key] ?? {}).length > 0);
 
-// Does this store have COMPARABLE prices for a category? Uses priceOf, so a
-// package-priced store (e.g. KMP for meat) correctly drops out of per-lb
-// categories and only shows where its prices are truly comparable (Dairy).
-export const storeHasCategoryData = (storeId: string, catKey: string): boolean => {
-  const cat = CATEGORIES.find((c) => c.key === catKey);
-  return !!cat && cat.items.some((it) => priceOf(storeId, catKey, it.id) != null);
-};
+// Does this store list anything in a specific category? (so a store only shows
+// on the tabs it actually has prices for — e.g. KMP appears in Dairy and Meat.)
+export const storeHasCategoryData = (storeId: string, catKey: string): boolean =>
+  Object.keys(PRICES[storeId]?.[catKey] ?? {}).length > 0;
 
 export interface CompItem {
   item: string;
@@ -116,7 +119,7 @@ export function basketTotals(items: { cat: string; id: string; qty?: number }[],
     // Catalog products (any searched item) are stored as { cat: 'catalog', id: name }
     // and priced by matching the name across the full store catalogs.
     const isCatalog = cat === 'catalog';
-    const prices = storeIds.map((sid) => (isCatalog ? catalogPriceOf(sid, id) : priceOf(sid, cat, id)));
+    const prices = storeIds.map((sid) => (isCatalog ? catalogPriceOf(sid, id) : comparablePriceOf(sid, cat, id)));
     const meta = isCatalog ? null : itemMeta(cat, id);
     const valid = prices.filter((p): p is number => p != null);
     const min = valid.length ? Math.min(...valid) : null;
@@ -181,7 +184,7 @@ export function areaDeals(storeIds: string[]): AreaDeal[] {
   for (const cat of CATEGORIES) {
     for (const it of cat.items) {
       const priced = storeIds
-        .map((sid) => ({ sid, p: priceOf(sid, cat.key, it.id) }))
+        .map((sid) => ({ sid, p: comparablePriceOf(sid, cat.key, it.id) }))
         .filter((x): x is { sid: string; p: number } => x.p != null)
         .sort((a, b) => a.p - b.p);
       if (priced.length < 2 || priced[1].p === priced[0].p) continue; // need a real gap
@@ -205,7 +208,7 @@ export function areaCheapest(storeIds: string[]): Chip[] {
     let best: Chip | null = null;
     for (const it of cat.items) {
       for (const sid of storeIds) {
-        const p = priceOf(sid, cat.key, it.id);
+        const p = comparablePriceOf(sid, cat.key, it.id);
         if (p != null && (!best || p < best.price)) {
           best = { name: it.label, price: p, store: STORE_ABBR[sid] ?? sid, unit: cat.unit };
         }

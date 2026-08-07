@@ -27,6 +27,7 @@ import {
   areaDeals,
   basketTotals,
   compRows,
+  isPackagePriced,
   LIVE_CATEGORIES,
   money,
   STORE_ABBR,
@@ -143,7 +144,14 @@ export function PricesScreen() {
               </Text>
               <View style={{ paddingHorizontal: 18 }}>
                 {cmp.map((r) => (
-                  <CompareRow key={`${r.cat}-${r.id}`} item={r.item} unit={r.unit} storeIds={b.ids} prices={r.prices} />
+                  <CompareRow
+                    key={`${r.cat}-${r.id}`}
+                    item={r.item}
+                    unit={r.unit}
+                    storeIds={b.ids}
+                    prices={r.prices}
+                    pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
+                  />
                 ))}
               </View>
               {solo.length ? (
@@ -159,6 +167,7 @@ export function PricesScreen() {
                           unit={r.unit}
                           storeIds={[b.ids[i]]}
                           prices={[r.prices[i]]}
+                          pkgFlags={[isPackagePriced(b.ids[i], b.cat.key)]}
                           soloClean
                         />
                       );
@@ -1289,6 +1298,7 @@ export function AddItemsModal({
                       id={r.id}
                       storeIds={b.ids}
                       prices={r.prices}
+                      pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
                       {...rowExtra(r.cat, r.id)}
                     />
                   ))}
@@ -1308,6 +1318,7 @@ export function AddItemsModal({
                             id={r.id}
                             storeIds={[b.ids[i]]}
                             prices={[r.prices[i]]}
+                            pkgFlags={[isPackagePriced(b.ids[i], b.cat.key)]}
                             soloClean
                             {...rowExtra(r.cat, r.id)}
                           />
