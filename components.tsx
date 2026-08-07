@@ -121,11 +121,13 @@ function PricePill({
   price,
   state,
   unitTag,
+  hideLabel,
 }: {
   label: string;
   price: number | null;
   state: PillState;
   unitTag?: string; // e.g. "/lb" — shown under the price to disambiguate units in a mixed row
+  hideLabel?: boolean; // single-store rows name the store in the caption, so skip the pill label
 }) {
   const { s } = useUI();
   if (price == null) {
@@ -141,7 +143,7 @@ function PricePill({
   const flagged = state === 'win' || state === 'tie' || state === 'pkg';
   return (
     <View style={[s.pill, box]}>
-      <Text style={s.pillLabel}>{label}</Text>
+      {!hideLabel ? <Text style={s.pillLabel}>{label}</Text> : null}
       <Text style={priceStyle}>{money(price)}</Text>
       {state === 'win' && (
         <Pop>
@@ -321,7 +323,11 @@ export function CompareRow({
           // When a package store is in the row, label the per-lb pills "/lb" so the
           // two aren't confused (e.g. 661 "/lb" next to KMP "pkg").
           const unitTag = hasPkg && !pkgFlags?.[i] && p != null ? unitSuffix(unit) : undefined;
-          return <PricePill key={sid} label={STORE_ABBR[sid] ?? sid} price={p} state={state} unitTag={unitTag} />;
+          // On single-store rows the caption already names the store ("Only at Seasons"),
+          // so drop the pill's store label to avoid saying it twice.
+          return (
+            <PricePill key={sid} label={STORE_ABBR[sid] ?? sid} price={p} state={state} unitTag={unitTag} hideLabel={anyCount <= 1} />
+          );
         })}
       </View>
     </View>
