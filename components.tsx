@@ -116,7 +116,17 @@ export function Segmented({
 
 type PillState = 'win' | 'lose' | 'tie' | 'none' | 'pkg';
 
-function PricePill({ label, price, state }: { label: string; price: number | null; state: PillState }) {
+function PricePill({
+  label,
+  price,
+  state,
+  unitTag,
+}: {
+  label: string;
+  price: number | null;
+  state: PillState;
+  unitTag?: string; // e.g. "/lb" — shown under the price to disambiguate units in a mixed row
+}) {
   const { s } = useUI();
   if (price == null) {
     return (
@@ -128,6 +138,7 @@ function PricePill({ label, price, state }: { label: string; price: number | nul
   }
   const box = state === 'win' ? s.pillWin : state === 'tie' ? s.pillTie : s.pillLose;
   const priceStyle = state === 'win' ? s.pillPriceWin : state === 'lose' ? s.pillPriceLose : s.pillPrice;
+  const flagged = state === 'win' || state === 'tie' || state === 'pkg';
   return (
     <View style={[s.pill, box]}>
       <Text style={s.pillLabel}>{label}</Text>
@@ -139,6 +150,7 @@ function PricePill({ label, price, state }: { label: string; price: number | nul
       )}
       {state === 'tie' && <Text style={s.pillFlagMuted}>TIE</Text>}
       {state === 'pkg' && <Text style={s.pillFlagMuted}>pkg</Text>}
+      {!flagged && unitTag ? <Text style={s.pillFlagMuted}>{unitTag}</Text> : null}
     </View>
   );
 }
@@ -224,6 +236,7 @@ export function CompareRow({
   const winnerIdx = min != null ? cmpPrices.indexOf(min) : -1;
   const multi = cmpValid.length >= 2; // 2+ comparable (per-lb) prices
   const anyCount = prices.filter((p) => p != null).length;
+  const hasPkg = !!pkgFlags?.some(Boolean); // row mixes per-lb and package prices
 
   let caption = '';
   if (anyCount <= 1) {
@@ -302,7 +315,10 @@ export function CompareRow({
               ? 'tie'
               : 'win'
             : 'lose';
-          return <PricePill key={sid} label={STORE_ABBR[sid] ?? sid} price={p} state={state} />;
+          // When a package store is in the row, label the per-lb pills "/lb" so the
+          // two aren't confused (e.g. 661 "/lb" next to KMP "pkg").
+          const unitTag = hasPkg && !pkgFlags?.[i] && p != null ? unitSuffix(unit) : undefined;
+          return <PricePill key={sid} label={STORE_ABBR[sid] ?? sid} price={p} state={state} unitTag={unitTag} />;
         })}
       </View>
     </View>
