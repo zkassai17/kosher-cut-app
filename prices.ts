@@ -38,7 +38,7 @@ const BEEF_ITEMS: Item[] = [
   { id: 'london_broil', label: 'Minute steak / London broil' },
   { id: 'rib_steak', label: 'Rib steak' },
   { id: 'flanken', label: 'Flanken' },
-  { id: 'brisket', label: 'Brisket' },
+  { id: 'brisket', label: 'Brisket (1st cut)' },
 ];
 
 const DAIRY_ITEMS: Item[] = [
@@ -86,7 +86,7 @@ export const PRICES: Record<string, StorePrices> = {
     },
     beef: {
       ground_beef: 9.99, extra_lean: 11.49, patties: 11.49, sliders: 12.49, stew: 14.99,
-      london_broil: 27.99, rib_steak: 29.99, flanken: 32.99, brisket: 13.99,
+      london_broil: 27.99, rib_steak: 29.99, flanken: 32.99, brisket: 20.99,
     },
     dairy: {
       eggs: 1.79, milk: 3.99, butter: 2.89, sourcream: 1.89,
@@ -102,7 +102,7 @@ export const PRICES: Record<string, StorePrices> = {
     },
     beef: {
       ground_beef: 8.99, extra_lean: 12.49, patties: 12.99, sliders: 11.99, stew: 14.99,
-      london_broil: 25.99, rib_steak: 31.49, flanken: 30.99, brisket: 17.99,
+      london_broil: 25.99, rib_steak: 31.49, flanken: 30.99, brisket: 18.99,
     },
     dairy: {
       eggs: 1.79, milk: 3.99, butter: 3.99, sourcream: 3.29,
@@ -135,7 +135,7 @@ export const PRICES: Record<string, StorePrices> = {
     },
     beef: {
       ground_beef: 9.49, extra_lean: 13.49, patties: 11.49, sliders: 12.99, stew: 14.49,
-      london_broil: 19.99, rib_steak: 33.99, flanken: 25.99, brisket: 9.99,
+      london_broil: 19.99, rib_steak: 33.99, flanken: 25.99, brisket: 19.49,
     },
     dairy: {
       eggs: 2.99, butter: 2.99, cream_cheese: 4.49, cottage_cheese: 1.69,
