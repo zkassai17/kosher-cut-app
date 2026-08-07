@@ -83,30 +83,21 @@ export const PRICES: Record<string, StorePrices> = {
     // Meat prices verified against the daily catalog (audit pass).
     chicken: { whole_chicken: 3.99, cut_in_8: 4.49, drumsticks: 5.99, legs: 4.99, thighs: 5.49, cutlets: 8.99, thin_cutlets: 11.99, pargiyot: 9.99, wings: 3.99, ground_chicken: 8.99 },
     beef: { ground_beef: 9.99, extra_lean: 11.99, patties: 11.49, sliders: 12.49, stew: 16.49, london_broil: 19.99, rib_steak: 32.99, flanken: 36.99, brisket: 20.99 },
-    dairy: {
-      eggs: 1.79, milk: 3.99, butter: 2.89, sourcream: 1.89,
-      cream_cheese: 3.89, cottage_cheese: 3.99, american_cheese: 6.19, shredded_cheese: 2.79, yogurt: 0.79,
-    },
+    dairy: { eggs: 2.29, milk: 3.99, butter: 2.89, cream_cheese: 3.89, cottage_cheese: 3.99, american_cheese: 8.29, shredded_cheese: 2.79, sourcream: 3.79, yogurt: 0.79 },
     produce: { bananas: 1.19, apples: 2.29, potatoes: 0.99 },
     deli: { pastrami: 6.29, bologna: 6.09, hotdogs: 8.99, cornedbeef: 10.99 },
   },
   gl: {
     chicken: { whole_chicken: 3.89, cut_in_8: 4.79, drumsticks: 5.49, legs: 4.79, thighs: 6.09, cutlets: 9.39, thin_cutlets: 9.99, pargiyot: 9.89, wings: 3.49, ground_chicken: 8.99 },
     beef: { ground_beef: 8.99, extra_lean: 12.49, patties: 12.99, sliders: 11.99, stew: 14.99, london_broil: 25.99, rib_steak: 32.99, flanken: 34.99, brisket: 18.99 },
-    dairy: {
-      eggs: 1.79, milk: 3.99, butter: 3.99, sourcream: 3.29,
-      cream_cheese: 4.19, cottage_cheese: 4.19, american_cheese: 4.99, shredded_cheese: 3.79, yogurt: 1.09,
-    },
+    dairy: { eggs: 1.89, milk: 3.99, butter: 3.99, cream_cheese: 4.19, cottage_cheese: 4.19, american_cheese: 6.99, shredded_cheese: 3.79, sourcream: 3.29, yogurt: 1.09 },
     produce: { bananas: 0.99, apples: 1.99, potatoes: 0.99 },
     deli: { pastrami: 8.69, bologna: 6.29, hotdogs: 11.49, cornedbeef: 9.99 },
   },
   superstop: {
     chicken: { whole_chicken: 4.49, cut_in_8: 4.99, drumsticks: 4.99, legs: 3.99, thighs: 5.49, cutlets: 8.99, thin_cutlets: 10.49, wings: 4.99, ground_chicken: 9.49 },
     beef: { ground_beef: 16.49, extra_lean: 19.49, patties: 19.49, sliders: 21.49, stew: 20.49, london_broil: 22.79, rib_steak: 37.79, flanken: 37.79, brisket: 21.49 },
-    dairy: {
-      eggs: 1.79, milk: 4.29, butter: 6.09, sourcream: 4.09,
-      cream_cheese: 3.29, cottage_cheese: 3.25, american_cheese: 5.29, shredded_cheese: 4.79, yogurt: 0.75,
-    },
+    dairy: { eggs: 3.99, milk: 3.99, butter: 6.09, cream_cheese: 6.39, cottage_cheese: 5.69, american_cheese: 5.49, shredded_cheese: 4.79, sourcream: 6.89, yogurt: 1.25 },
     produce: { bananas: 0.89, apples: 2.19, potatoes: 1.09 },
     deli: { pastrami: 8.99, bologna: 8.49, hotdogs: 6.99, cornedbeef: 9.49 },
   },
@@ -114,30 +105,21 @@ export const PRICES: Record<string, StorePrices> = {
   gourmetglatt: {
     chicken: { whole_chicken: 4.19, cut_in_8: 4.29, drumsticks: 4.89, legs: 3.99, thighs: 4.19, cutlets: 8.49, thin_cutlets: 11.99, pargiyot: 9.19, wings: 2.49, ground_chicken: 9.29 },
     beef: { ground_beef: 9.49, extra_lean: 13.49, patties: 11.49, sliders: 12.99, stew: 14.49, london_broil: 19.99, rib_steak: 33.99, flanken: 34.99, brisket: 19.49 },
-    dairy: {
-      eggs: 2.99, milk: 4.49, butter: 2.99, cream_cheese: 4.49, cottage_cheese: 1.69,
-      american_cheese: 4.69, shredded_cheese: 3.99, sourcream: 1.89, yogurt: 0.79,
-    },
+    dairy: { eggs: 2.99, milk: 4.49, butter: 2.99, cream_cheese: 4.49, cottage_cheese: 1.69, american_cheese: 6.99, shredded_cheese: 3.99, sourcream: 1.89, yogurt: 0.79 },
     produce: {}, deli: {},
   },
   // Seasons — Lawrence (Five Towns), My Cloud Grocer (full scrape)
   seasons_law: {
     chicken: { whole_chicken: 3.99, cut_in_8: 4.09, drumsticks: 2.99, legs: 3.49, thighs: 4.39, cutlets: 9.39, thin_cutlets: 11.49, pargiyot: 13.99, wings: 2.99, ground_chicken: 4.99 },
     beef: { ground_beef: 10.99, extra_lean: 12.99, patties: 11.99, sliders: 12.99, stew: 14.99, london_broil: 18.49, rib_steak: 35.99, flanken: 22.99, brisket: 20.99 },
-    dairy: {
-      eggs: 1.99, milk: 3.29, butter: 2.99, cream_cheese: 3.99, cottage_cheese: 1.69,
-      american_cheese: 5.49, shredded_cheese: 3.99, sourcream: 1.99, yogurt: 0.99,
-    },
+    dairy: { eggs: 2.49, milk: 3.29, butter: 2.99, cream_cheese: 4.99, cottage_cheese: 4.49, american_cheese: 5.99, shredded_cheese: 3.99, sourcream: 3.49, yogurt: 0.99 },
     produce: {}, deli: {},
   },
   // 661 — New York City, My Cloud Grocer (full scrape)
   six60one: {
     chicken: { whole_chicken: 4.49, cut_in_8: 4.49, drumsticks: 4.99, legs: 2.99, thighs: 4.49, cutlets: 9.99, thin_cutlets: 13.99, pargiyot: 9.99, wings: 2.99, ground_chicken: 9.99 },
     beef: { ground_beef: 9.99, extra_lean: 11.99, patties: 11.99, sliders: 11.99, stew: 15.99, london_broil: 19.99, rib_steak: 34.99, flanken: 33.99, brisket: 19.99 },
-    dairy: {
-      eggs: 1.49, milk: 3.79, butter: 3.59, cream_cheese: 4.29, cottage_cheese: 4.49,
-      american_cheese: 6.49, shredded_cheese: 4.49, sourcream: 3.49, yogurt: 0.79,
-    },
+    dairy: { eggs: 2.29, milk: 3.79, butter: 3.59, cream_cheese: 4.59, cottage_cheese: 5.79, american_cheese: 7.79, shredded_cheese: 4.59, sourcream: 3.49, yogurt: 0.89 },
     produce: {}, deli: {},
   },
   // The Kosher Marketplace — Manhattan (Shopify). Premium marketplace. Meat is
