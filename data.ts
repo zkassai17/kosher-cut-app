@@ -4,12 +4,22 @@
 
 import { CATEGORIES, isPackagePriced, itemMeta, money, priceOf, PRICES, Unit, unitSuffix } from './prices';
 
-// Price for a per-lb COMPARISON — package-priced stores (KMP meat) return null so
-// they never pollute a per-lb total/deal; they're still shown for reference on the
-// Prices tab, tagged "pkg".
-const comparablePriceOf = (storeId: string, cat: string, item: string): number | null =>
-  isPackagePriced(storeId, cat) ? null : priceOf(storeId, cat, item);
 import { catalogIsLb, catalogPriceOf } from './catalog';
+
+// Resolve a curated cut's price. Cuts mapped to a catalog product (`q`) price LIVE
+// from the daily catalog — always fresh, and the SAME cut is matched across stores
+// (no more whole-vs-1st-cut mixups). Unmapped cuts use the hand-typed table.
+const itemQ = (cat: string, id: string): string | undefined =>
+  CATEGORIES.find((c) => c.key === cat)?.items.find((i) => i.id === id)?.q;
+const livePriceOf = (storeId: string, cat: string, id: string): number | null => {
+  const q = itemQ(cat, id);
+  return q ? catalogPriceOf(storeId, q) : priceOf(storeId, cat, id);
+};
+
+// Per-lb COMPARISON price — package-priced stores (KMP meat) return null so they
+// never pollute a per-lb total/deal; still shown for reference on Prices, tagged "pkg".
+const comparablePriceOf = (storeId: string, cat: string, item: string): number | null =>
+  isPackagePriced(storeId, cat) ? null : livePriceOf(storeId, cat, item);
 
 export { money, unitSuffix, isPackagePriced };
 
@@ -80,7 +90,7 @@ export function compRows(catKey: string, storeIds: string[]): CompItem[] {
       id: it.id,
       cat: catKey,
       unit: cat.unit,
-      prices: storeIds.map((sid) => priceOf(sid, catKey, it.id)),
+      prices: storeIds.map((sid) => livePriceOf(sid, catKey, it.id)),
     }))
     .filter((r) => r.prices.some((p) => p != null));
 }

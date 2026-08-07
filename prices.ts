@@ -7,7 +7,10 @@
 // Shape: PRICES[storeId][categoryKey][itemId] = price.
 
 export type Unit = 'lb' | 'ea';
-export interface Item { id: string; label: string }
+// `q`, when set, is a catalog product name whose canonical group this cut maps to.
+// If present, the app prices the cut LIVE from the daily catalog (fresh, and the
+// same cut is matched across stores) instead of the hand-typed table below.
+export interface Item { id: string; label: string; q?: string }
 export interface Category {
   key: string;
   label: string;
@@ -21,11 +24,11 @@ const CHICKEN_ITEMS: Item[] = [
   { id: 'cut_in_8', label: 'Chicken, cut in 8' },
   { id: 'drumsticks', label: 'Drumsticks' },
   { id: 'legs', label: 'Chicken legs' },
-  { id: 'thighs', label: 'Chicken thighs' },
-  { id: 'cutlets', label: 'Chicken cutlets' },
+  { id: 'thighs', label: 'Chicken thighs', q: 'Chicken Thighs' },
+  { id: 'cutlets', label: 'Chicken cutlets', q: 'Chicken Cutlets' },
   { id: 'thin_cutlets', label: 'Thin cutlets' },
   { id: 'pargiyot', label: 'Baby chicken (pargiyot)' },
-  { id: 'wings', label: 'Chicken wings' },
+  { id: 'wings', label: 'Chicken wings', q: 'Chicken Wings' },
   { id: 'ground_chicken', label: 'Ground chicken' },
 ];
 
@@ -35,10 +38,10 @@ const BEEF_ITEMS: Item[] = [
   { id: 'patties', label: 'Beef patties' },
   { id: 'sliders', label: 'Sliders / mini burgers' },
   { id: 'stew', label: 'Beef stew (cholent)' },
-  { id: 'london_broil', label: 'Minute steak / London broil' },
-  { id: 'rib_steak', label: 'Rib steak' },
+  { id: 'london_broil', label: 'London broil (shoulder)', q: 'London Broil Shoulder' },
+  { id: 'rib_steak', label: 'Rib steak', q: 'Rib Steak' },
   { id: 'flanken', label: 'Flanken' },
-  { id: 'brisket', label: 'Brisket (1st cut)' },
+  { id: 'brisket', label: 'Brisket (1st cut)', q: '1st Cut Brisket' },
 ];
 
 const DAIRY_ITEMS: Item[] = [
