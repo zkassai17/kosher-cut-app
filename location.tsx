@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AREAS, Area, milesBetween, Origin, setHiddenStores } from './stores';
+import { track } from './track';
 
 interface LocationState {
   origin: Origin;
@@ -70,6 +71,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       const nearest = nearestArea(latitude, longitude);
       // Header shows the clean area name (the ◉ pin already signals "your location").
       setOrigin({ label: shortAreaName(nearest), lat: latitude, lng: longitude, source: 'gps', areaId: nearest.id });
+      track('area_set', { area: nearest.id, via: 'gps' });
       setGpsStatus('idle');
     } catch {
       setGpsStatus('error');
@@ -122,6 +124,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const setArea = useCallback((a: Area) => {
     setAutoLocateState(false); // choosing a fixed area turns off auto-locate
     setOrigin({ label: a.label, lat: a.lat, lng: a.lng, source: 'area', areaId: a.id });
+    track('area_set', { area: a.id, via: 'picker' });
   }, []);
 
   const setAutoLocate = useCallback(
@@ -146,6 +149,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       const nearest = nearestArea(latitude, longitude);
       setAutoLocateState(false);
       setOrigin({ label: query, lat: latitude, lng: longitude, source: 'gps', areaId: nearest.id });
+      track('area_set', { area: nearest.id, via: 'address' });
       setGpsStatus('idle');
       return true;
     } catch {

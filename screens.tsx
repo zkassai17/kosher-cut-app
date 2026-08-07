@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { useLocation } from './location';
 import { useProfile } from './profile';
 import { useBasket } from './basket';
 import { useAuth } from './auth';
+import { track } from './track';
 import { AnimatedMoney } from './anim';
 import {
   CheapestChips,
@@ -76,6 +77,28 @@ export function PricesScreen() {
   const soloHits = catalogHits.filter((h) => h.prices.length < 2);
   const nothing = !blocks.length && !catalogHits.length;
 
+  // ---- Analytics ----------------------------------------------------------
+  // Keep the latest result count in a ref so the debounced search event can read
+  // it without re-running the search.
+  const resultCountRef = useRef(0);
+  resultCountRef.current = blocks.reduce((n, b) => n + b.rows.length, 0) + catalogHits.length;
+  // A search = a stabilized query (900ms after the last keystroke). Also logs a
+  // demand signal when a search finds nothing.
+  useEffect(() => {
+    if (query.length < 2) return;
+    const timer = setTimeout(() => {
+      const results = resultCountRef.current;
+      track('search', { query, area: origin.areaId, results });
+      if (results === 0) track('search_no_results', { query, area: origin.areaId });
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [query, origin.areaId]);
+  // Demand signal: the user is in an area we don't cover with prices.
+  const hasCoverage = areaStoreIds(origin, maxMiles).some((id) => storeHasData(id));
+  useEffect(() => {
+    if (!hasCoverage) track('area_uncovered', { area: origin.areaId });
+  }, [origin.areaId, hasCoverage]);
+
   return (
     <View style={s.root}>
       <FeedHeader />
@@ -91,7 +114,10 @@ export function PricesScreen() {
               options={LIVE_CATEGORIES.map((c) => ({ key: c.key, label: c.label }))}
               trailing={
                 <Pressable
-                  onPress={() => setShowDeals(true)}
+                  onPress={() => {
+                    track('deal_view');
+                    setShowDeals(true);
+                  }}
                   hitSlop={6}
                   style={[s.fchip, { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.goldBg, borderColor: t.gold }]}
                 >
@@ -577,6 +603,7 @@ export function AccountScreen() {
   // quantities, remove, or add more. (Shopping the list lives on the List tab.)
   const openList = (id: string) => {
     basket.setActive(id);
+    track('list_open', { list: id });
     setShowEditor(true);
   };
 

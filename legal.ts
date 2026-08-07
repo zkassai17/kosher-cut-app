@@ -16,19 +16,21 @@ export const PRIVACY: LegalDoc = {
   title: 'Privacy Policy',
   updated: 'August 2026',
   sections: [
-    { p: ['koshercart helps you compare kosher grocery prices at stores near you. We built it to collect as little about you as possible.'] },
+    { p: ['koshercart helps you compare kosher grocery prices at stores near you. We collect as little as possible — only what we need to run and improve the app.'] },
     {
       h: 'What we collect',
       p: [
-        'Location — if you turn on "Use my location automatically," the app reads your device location to find nearby stores. It is used on your device to pick the closest area and is NOT sent to us or stored on any server.',
-        'Your lists, regulars, name, and settings — saved ONLY on your device. We have no accounts and no server that receives this data.',
+        'Account — if you sign up, we store your email address and a securely-hashed password (handled by our sign-in provider, Supabase) so you can log in and sync.',
+        'Your lists, regulars, name, and settings — saved on your device, and when you are signed in, synced to your account so you can use them on another device.',
+        'Location — if you turn on "Use my location automatically," the app reads your device location on-device to pick the closest area. We store the AREA you use (e.g. "Teaneck"), not your precise coordinates.',
+        'Usage — basic in-app events such as app opens, the area you use, and what you search for. We use this to fix bugs, improve the app, and decide which stores and areas to add next.',
+        'Email updates — only if you opt in, we use your email to send occasional product updates and deals. Unsubscribe any time in Settings or from any email.',
       ],
     },
     {
       h: 'What we do NOT do',
       p: [
-        'We do not require an account or a login.',
-        'We do not sell or share your personal information.',
+        'We do not sell or rent your personal information.',
         'We do not track you across other apps or websites.',
         'We do not run third-party advertising SDKs that profile you.',
       ],
@@ -39,7 +41,7 @@ export const PRIVACY: LegalDoc = {
     },
     {
       h: 'Deleting your data',
-      p: ['Your data lives only on your device. Remove all of it any time from Settings → Delete account, or by deleting the app.'],
+      p: ['Use Settings → Delete account to permanently remove your account, your synced lists and regulars, and everything stored on this device. Deleting the app removes the on-device copy.'],
     },
     { h: 'Children', p: ['The app is not directed to children under 13 and does not knowingly collect information from them.'] },
     { h: 'Contact', p: ['Questions? Email koshercutapp@gmail.com.'] },

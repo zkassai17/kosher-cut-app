@@ -8,6 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 
 import { supabase, authConfigured } from './supabase';
+import { setAnalyticsUser, track } from './track';
 
 // Finish any auth session that was pending when the app was backgrounded.
 WebBrowser.maybeCompleteAuthSession();
@@ -57,9 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       if (!alive) return;
       setSession(data.session);
+      setAnalyticsUser(data.session?.user?.id ?? null);
+      if (data.session?.user) track('app_open'); // one per launch for returning users
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setAnalyticsUser(s?.user?.id ?? null);
+    });
     return () => {
       alive = false;
       sub.subscription.unsubscribe();
@@ -87,6 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           options: { data: { emailUpdates } },
         });
         if (error) return { error: error.message };
+        if (data.session?.user) {
+          setAnalyticsUser(data.session.user.id);
+          track('sign_up', { emailUpdates });
+        }
         return { needsConfirmation: !data.session }; // no session back = must confirm via email
       },
       signInWithGoogle: async () => {
