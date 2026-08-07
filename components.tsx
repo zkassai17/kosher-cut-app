@@ -238,9 +238,12 @@ export function CompareRow({
   const anyCount = prices.filter((p) => p != null).length;
   const hasPkg = !!pkgFlags?.some(Boolean); // row mixes per-lb and package prices
 
+  const onlyIdx = prices.findIndex((p) => p != null);
   let caption = '';
-  if (anyCount <= 1) {
-    const onlyIdx = prices.findIndex((p) => p != null);
+  if (soloClean) {
+    // Under the "Only at one store" header — name the store so it's obvious.
+    caption = onlyIdx >= 0 ? `Only at ${STORE_ABBR[storeIds[onlyIdx]]}` : '';
+  } else if (anyCount <= 1) {
     caption = onlyIdx >= 0 ? `Only ${STORE_ABBR[storeIds[onlyIdx]]} lists this` : '';
   } else if (multi && save === 0) {
     caption = 'Same price';
@@ -286,7 +289,7 @@ export function CompareRow({
           ) : null}
           <Text style={[s.cutName, { flexShrink: 1 }]}>{item}</Text>
         </View>
-        {caption && !soloClean ? (
+        {caption ? (
           multi && save > 0 ? (
             <Pop>
               <Text style={s.cutSave}>{caption}</Text>
