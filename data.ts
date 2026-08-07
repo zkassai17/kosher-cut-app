@@ -51,10 +51,13 @@ export const STORE_ABBR: Record<string, string> = {
 export const storeHasData = (storeId: string): boolean =>
   !!PRICES[storeId] && CATEGORIES.some((c) => Object.keys(PRICES[storeId][c.key] ?? {}).length > 0);
 
-// Does this store list anything in a specific category? (so a store only shows
-// on the tabs it actually has prices for — e.g. KMP appears in Dairy, not Meat.)
-export const storeHasCategoryData = (storeId: string, catKey: string): boolean =>
-  Object.keys(PRICES[storeId]?.[catKey] ?? {}).length > 0;
+// Does this store have COMPARABLE prices for a category? Uses priceOf, so a
+// package-priced store (e.g. KMP for meat) correctly drops out of per-lb
+// categories and only shows where its prices are truly comparable (Dairy).
+export const storeHasCategoryData = (storeId: string, catKey: string): boolean => {
+  const cat = CATEGORIES.find((c) => c.key === catKey);
+  return !!cat && cat.items.some((it) => priceOf(storeId, catKey, it.id) != null);
+};
 
 export interface CompItem {
   item: string;

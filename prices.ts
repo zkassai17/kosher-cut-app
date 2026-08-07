@@ -214,7 +214,15 @@ export function itemMeta(cat: string, id: string): { label: string; unit: Unit }
   return c && it ? { label: it.label, unit: c.unit } : null;
 }
 
+// Stores that price meat BY THE PACKAGE, not per pound (premium butchers). Their
+// meat numbers aren't comparable to a per-lb price, so we hide them from any
+// per-lb comparison rather than show a misleading gap (e.g. a $13.99 package
+// looking like $13.99/lb next to a real $3.99/lb). Non-lb categories (dairy = ea)
+// are unaffected.
+const PACKAGE_PRICED = new Set(['kmp']);
+
 export function priceOf(storeId: string, cat: string, item: string): number | null {
+  if (PACKAGE_PRICED.has(storeId) && unitOf(cat) === 'lb') return null;
   return PRICES[storeId]?.[cat]?.[item] ?? null;
 }
 
