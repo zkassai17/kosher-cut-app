@@ -121,7 +121,7 @@ export const PRICES: Record<string, StorePrices> = {
       flanken: 37.79, brisket: 21.49,
     },
     dairy: {
-      eggs: 1.79, butter: 6.09, sourcream: 4.09,
+      eggs: 1.79, milk: 4.29, butter: 6.09, sourcream: 4.09,
       cream_cheese: 3.29, cottage_cheese: 3.25, american_cheese: 5.29, shredded_cheese: 4.79, yogurt: 0.75,
     },
     produce: { bananas: 0.89, apples: 2.19, potatoes: 1.09 },
@@ -138,7 +138,7 @@ export const PRICES: Record<string, StorePrices> = {
       london_broil: 19.99, rib_steak: 33.99, flanken: 25.99, brisket: 19.49,
     },
     dairy: {
-      eggs: 2.99, butter: 2.99, cream_cheese: 4.49, cottage_cheese: 1.69,
+      eggs: 2.99, milk: 4.49, butter: 2.99, cream_cheese: 4.49, cottage_cheese: 1.69,
       american_cheese: 4.69, shredded_cheese: 3.99, sourcream: 1.89, yogurt: 0.79,
     },
     produce: {}, deli: {},
@@ -154,8 +154,8 @@ export const PRICES: Record<string, StorePrices> = {
       london_broil: 18.49, rib_steak: 33.99, flanken: 19.99, brisket: 20.99,
     },
     dairy: {
-      eggs: 1.99, butter: 2.99, cream_cheese: 3.99, cottage_cheese: 1.69,
-      american_cheese: 5.49, shredded_cheese: 3.99, sourcream: 1.99,
+      eggs: 1.99, milk: 4.49, butter: 2.99, cream_cheese: 3.99, cottage_cheese: 1.69,
+      american_cheese: 5.49, shredded_cheese: 3.99, sourcream: 1.99, yogurt: 0.99,
     },
     produce: {}, deli: {},
   },
