@@ -154,7 +154,7 @@ export const PRICES: Record<string, StorePrices> = {
       london_broil: 18.49, rib_steak: 33.99, flanken: 19.99, brisket: 20.99,
     },
     dairy: {
-      eggs: 1.99, milk: 4.49, butter: 2.99, cream_cheese: 3.99, cottage_cheese: 1.69,
+      eggs: 1.99, milk: 3.29, butter: 2.99, cream_cheese: 3.99, cottage_cheese: 1.69,
       american_cheese: 5.49, shredded_cheese: 3.99, sourcream: 1.99, yogurt: 0.99,
     },
     produce: {}, deli: {},
