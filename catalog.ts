@@ -38,6 +38,19 @@ export function setCatalog(data: Record<string, CatalogProduct[]> | undefined | 
   }
 }
 
+// Fresh curated category prices from the daily feed: store -> category -> item -> price.
+// The scraper computes these (verified match per cut), so the category tabs stay
+// current. Empty until the feed loads; the app falls back to the hand-typed table.
+let CURATED: Record<string, Record<string, Record<string, number>>> = {};
+export function setCurated(data: Record<string, Record<string, Record<string, number>>> | undefined | null): void {
+  CURATED = data && typeof data === 'object' ? data : {};
+}
+// Returns the fresh price, or undefined when there's no override (→ use hand-typed).
+export function curatedPriceOf(storeId: string, cat: string, item: string): number | undefined {
+  const v = CURATED[storeId]?.[cat]?.[item];
+  return typeof v === 'number' ? v : undefined;
+}
+
 export const hasCatalog = (storeId: string): boolean => (CATALOG[storeId]?.length ?? 0) > 0;
 
 export const catalogSize = (storeId: string): number => CATALOG[storeId]?.length ?? 0;

@@ -19,6 +19,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalize } from './canonicalize.mjs';
 import { cedarWeeklyAd } from './cedar.mjs';
+import { computeCurated } from './curated.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -262,10 +263,11 @@ async function run() {
     console.error('cedar weekly ad skipped:', String(e).slice(0, 160));
   }
 
-  // Emit the app feed: { updatedAt, catalog, weeklyAds } at the repo root (data.json).
+  // Emit the app feed: { updatedAt, catalog, weeklyAds, curated } at the repo root.
   const stamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const feedPath = join(__dirname, '..', 'data.json');
-  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, ...(weeklyAds ? { weeklyAds } : {}) }));
+  const curated = computeCurated(out); // verified category prices → keeps the tabs fresh daily
+  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, curated, ...(weeklyAds ? { weeklyAds } : {}) }));
 
   // Also refresh the bundled snapshot the app imports (offline / first-render
   // fallback) so it carries the same products + AI keys as the feed.
