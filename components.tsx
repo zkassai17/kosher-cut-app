@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUI } from './ui';
@@ -1901,6 +1902,67 @@ export function ListOptionsSheet({ visible, onClose }: { visible: boolean; onClo
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+/* One-time first-run explainer — the 5-second "what is koshercart" so a new user
+   gets the value before poking around. Shows once, then never again. */
+const ONBOARDED_KEY = 'kc.onboarded.v1';
+export function Onboarding() {
+  const { t } = useUI();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDED_KEY)
+      .then((seen) => {
+        if (!seen) setVisible(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  const done = () => {
+    AsyncStorage.setItem(ONBOARDED_KEY, '1').catch(() => {});
+    setVisible(false);
+  };
+
+  const rows: { icon: string; text: string }[] = [
+    { icon: '🏷️', text: 'We check kosher prices at stores near you — refreshed daily.' },
+    { icon: '🛒', text: 'Build a list and we show which store is cheapest for the whole cart.' },
+    { icon: '📍', text: 'Set your area up top to see your local stores.' },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={done}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 26 }}>
+        <View style={{ width: '100%', maxWidth: 420, backgroundColor: t.surface, borderRadius: 22, padding: 24, borderWidth: 1, borderColor: t.line }}>
+          <View style={{ alignItems: 'center', marginBottom: 6 }}>
+            <BrandMark size={24} />
+          </View>
+          <Text style={{ color: t.ink, fontSize: 20, fontFamily: sans.bold, textAlign: 'center', marginTop: 10 }}>
+            Find the cheapest kosher groceries
+          </Text>
+          <Text style={{ color: t.inkSoft, fontSize: 13.5, fontFamily: sans.med, textAlign: 'center', marginTop: 4, lineHeight: 19 }}>
+            Compare prices across your local stores — every week.
+          </Text>
+
+          <View style={{ marginTop: 20, gap: 14 }}>
+            {rows.map((r) => (
+              <View key={r.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text style={{ fontSize: 22 }}>{r.icon}</Text>
+                <Text style={{ flex: 1, color: t.ink, fontSize: 14.5, fontFamily: sans.med, lineHeight: 20 }}>{r.text}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Pressable
+            onPress={done}
+            style={{ height: 52, borderRadius: 26, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center', marginTop: 24 }}
+          >
+            <Text style={{ color: '#fff', fontFamily: sans.bold, fontSize: 15.5 }}>Start saving</Text>
+          </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

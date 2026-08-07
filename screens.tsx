@@ -104,7 +104,7 @@ export function PricesScreen() {
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 36, paddingTop: 4 }}>
         <SearchBar value={q} onChange={setQ} />
-        <Text style={[s.listHint, { marginBottom: 2 }]}>Prices updated {updatedAt}</Text>
+        <Text style={[s.listHint, { marginBottom: 2 }]}>Prices updated {updatedAt} · always confirm in-store</Text>
 
         {!query ? (
           <View style={{ marginTop: 4 }}>
@@ -509,6 +509,9 @@ export function ListScreen() {
                     <Text style={{ color: t.brand, fontFamily: sansBold }}>{money(res.splitSavings)}</Text> more.
                   </Text>
                 ) : null}
+                <Text style={{ color: t.inkFaint, fontSize: 11.5, marginTop: 8, fontFamily: sansMed }}>
+                  Estimate from the latest prices — confirm in-store.
+                </Text>
               </View>
             ) : null}
 

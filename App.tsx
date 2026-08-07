@@ -25,7 +25,7 @@ import { ProfileProvider } from './profile';
 import { AuthProvider, useAuth } from './auth';
 import { BasketProvider } from './basket';
 import { DataProvider } from './datactx';
-import { SignInModal } from './components';
+import { Onboarding, SignInModal } from './components';
 import { AccountScreen, ListScreen, PricesScreen, StoresScreen } from './screens';
 
 const Tab = createBottomTabNavigator();
@@ -89,10 +89,11 @@ function Gate() {
   const { configured, loading, user } = useAuth();
   const { t } = useUI();
   if (configured && loading) return <View style={{ flex: 1, backgroundColor: t.paper }} />; // brief splash while restoring session
+  const gateUp = configured && !user;
   return (
     <>
       <Tabs />
-      {configured && !user ? <SignInModal visible onClose={() => {}} gate /> : null}
+      {gateUp ? <SignInModal visible onClose={() => {}} gate /> : <Onboarding />}
     </>
   );
 }
