@@ -29,7 +29,7 @@ import { Pop } from './anim';
 import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
 import { AREAS, areaStores, PriceStatus, StoreWithDist } from './stores';
-import { BrandItem, cleanName, hasCatalog } from './catalog';
+import { BrandItem, BrandRow, cleanName, hasCatalog } from './catalog';
 import { LegalDoc, PRIVACY, TERMS } from './legal';
 import {
   AreaDeal,
@@ -186,70 +186,99 @@ export function CutRow({ c }: { c: Cut }) {
 }
 
 /* Compare one item across the stores near you (2–3 columns, cheapest green). */
-// Expanded brand-by-brand comparison shown under a Prices row when tapped.
-// Store columns are pinned in a header; each brand's cheapest store is a filled
-// green pill — UNLESS the row is size-flagged (then "sizes differ", no winner).
-// Long lists start capped with a "Show all" toggle.
-const BRAND_ROWS_SHOWN = 8;
+// Brand-by-brand comparison for one item, split into two sections:
+//   • "Compare" — brands BOTH stores carry, side by side, cheapest highlighted.
+//   • "Only at one store" — brands a single store carries, shown cleanly (store
+//     name + price, no confusing "—").
 const COL_W = 64;
-export function BrandTable({ item, storeIds, full }: { item: BrandItem; storeIds: string[]; full?: boolean }) {
+export function BrandTable({ item, storeIds }: { item: BrandItem; storeIds: string[]; full?: boolean }) {
   const { t } = useUI();
-  const [showAll, setShowAll] = useState(false);
-  const all = item.rows.filter((r) => storeIds.some((sid) => r.prices[sid] != null));
-  const rows = full || showAll ? all : all.slice(0, BRAND_ROWS_SHOWN);
+  const nPriced = (r: BrandRow) => storeIds.filter((sid) => r.prices[sid] != null).length;
+  const both = item.rows.filter((r) => nPriced(r) >= 2);
+  const solo = item.rows.filter((r) => nPriced(r) === 1);
+
+  const sizeSub = (r: BrandRow) => {
+    if (r.sizeWarn) return 'sizes differ';
+    const known = [...new Set(storeIds.map((sid) => r.sizes[sid]).filter(Boolean) as string[])];
+    return known.length === 1 ? known[0] : '';
+  };
+
   return (
-    <View style={{ backgroundColor: t.surface, borderRadius: 14, marginBottom: 12, paddingHorizontal: 14 }}>
-      {/* Pinned store-column header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
-        <Text style={{ flex: 1, color: t.inkFaint, fontSize: 10, fontFamily: sans.semi, letterSpacing: 0.5 }}>BRAND</Text>
-        {storeIds.map((sid) => (
-          <Text key={sid} style={{ width: COL_W, textAlign: 'center', color: t.inkFaint, fontSize: 10, fontFamily: sans.semi, letterSpacing: 0.3 }}>
-            {STORE_ABBR[sid] ?? sid}
-          </Text>
-        ))}
-      </View>
-
-      {rows.map((r, idx) => {
-        const present = storeIds.map((sid) => r.prices[sid]).filter((p): p is number => p != null);
-        const min = present.length ? Math.min(...present) : null;
-        const canWin = !r.sizeWarn && present.length >= 2 && Math.min(...present) < Math.max(...present);
-        const knownSizes = [...new Set(storeIds.map((sid) => r.sizes[sid]).filter(Boolean) as string[])];
-        const sub = r.sizeWarn ? 'sizes differ' : knownSizes.length === 1 ? knownSizes[0] : '';
-        return (
-          <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: t.line }}>
-            <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={{ color: t.ink, fontSize: 13.5, fontFamily: sans.bold }} numberOfLines={1}>
-                {r.brand}
-                {r.variant ? <Text style={{ color: t.inkSoft, fontFamily: sans.med }}>{`  ${r.variant}`}</Text> : null}
+    <View>
+      {/* ---- Compare: both stores ---- */}
+      {both.length ? (
+        <View style={{ backgroundColor: t.surface, borderRadius: 14, marginBottom: 12, paddingHorizontal: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+            <Text style={{ flex: 1, color: t.inkFaint, fontSize: 10.5, fontFamily: sans.semi, letterSpacing: 0.5 }}>COMPARE · BOTH STORES</Text>
+            {storeIds.map((sid) => (
+              <Text key={sid} style={{ width: COL_W, textAlign: 'center', color: t.inkFaint, fontSize: 10, fontFamily: sans.semi }}>
+                {STORE_ABBR[sid] ?? sid}
               </Text>
-              {sub ? <Text style={{ color: t.inkFaint, fontSize: 10.5, marginTop: 1, fontFamily: sans.med }}>{sub}</Text> : null}
-            </View>
-            {storeIds.map((sid) => {
-              const p = r.prices[sid];
-              const best = canWin && p != null && p === min;
-              return (
-                <View key={sid} style={{ width: COL_W, alignItems: 'center' }}>
-                  <View style={{ minWidth: 50, alignItems: 'center', paddingVertical: 4, borderRadius: 9, backgroundColor: best ? t.brand : 'transparent' }}>
-                    <Text style={{ color: p == null ? t.inkFaint : best ? '#fff' : t.ink, fontSize: 13, fontFamily: sans.bold }}>
-                      {p == null ? '—' : money(p)}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
+            ))}
           </View>
-        );
-      })}
+          {both.map((r, idx) => {
+            const present = storeIds.map((sid) => r.prices[sid]).filter((p): p is number => p != null);
+            const min = Math.min(...present);
+            const canWin = !r.sizeWarn && Math.min(...present) < Math.max(...present);
+            const sub = sizeSub(r);
+            return (
+              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: t.line }}>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={{ color: t.ink, fontSize: 13.5, fontFamily: sans.bold }} numberOfLines={1}>
+                    {r.brand}
+                    {r.variant ? <Text style={{ color: t.inkSoft, fontFamily: sans.med }}>{`  ${r.variant}`}</Text> : null}
+                  </Text>
+                  {sub ? <Text style={{ color: t.inkFaint, fontSize: 10.5, marginTop: 1, fontFamily: sans.med }}>{sub}</Text> : null}
+                </View>
+                {storeIds.map((sid) => {
+                  const p = r.prices[sid];
+                  const best = canWin && p != null && p === min;
+                  return (
+                    <View key={sid} style={{ width: COL_W, alignItems: 'center' }}>
+                      <View style={{ minWidth: 50, alignItems: 'center', paddingVertical: 4, borderRadius: 9, backgroundColor: best ? t.brand : 'transparent' }}>
+                        <Text style={{ color: p == null ? t.inkFaint : best ? '#fff' : t.ink, fontSize: 13, fontFamily: sans.bold }}>
+                          {p == null ? '—' : money(p)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })}
+          <View style={{ paddingBottom: 8 }} />
+        </View>
+      ) : null}
 
-      {!full && all.length > BRAND_ROWS_SHOWN ? (
-        <Pressable onPress={() => setShowAll((v) => !v)} style={{ paddingVertical: 11, alignItems: 'center', borderTopWidth: 1, borderTopColor: t.line }}>
-          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sans.semi }}>
-            {showAll ? 'Show less' : `Show all ${all.length} brands`}
+      {/* ---- Only at one store ---- */}
+      {solo.length ? (
+        <View style={{ backgroundColor: t.surface, borderRadius: 14, marginBottom: 12, paddingHorizontal: 14 }}>
+          <Text style={{ color: t.inkFaint, fontSize: 10.5, fontFamily: sans.semi, letterSpacing: 0.5, paddingTop: 12, paddingBottom: 2 }}>
+            ONLY AT ONE STORE
           </Text>
-        </Pressable>
-      ) : (
-        <View style={{ paddingBottom: 8 }} />
-      )}
+          {solo.map((r, idx) => {
+            const sid = storeIds.find((s) => r.prices[s] != null) as string;
+            const p = r.prices[sid];
+            const sub = sizeSub(r);
+            return (
+              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: t.line }}>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={{ color: t.ink, fontSize: 13.5, fontFamily: sans.bold }} numberOfLines={1}>
+                    {r.brand}
+                    {r.variant ? <Text style={{ color: t.inkSoft, fontFamily: sans.med }}>{`  ${r.variant}`}</Text> : null}
+                  </Text>
+                  {sub ? <Text style={{ color: t.inkFaint, fontSize: 10.5, marginTop: 1, fontFamily: sans.med }}>{sub}</Text> : null}
+                </View>
+                <Text style={{ color: t.ink, fontSize: 13.5, fontFamily: sans.bold }}>{money(p as number)}</Text>
+                <Text style={{ color: t.inkSoft, fontSize: 11.5, fontFamily: sans.med, marginLeft: 8, minWidth: COL_W - 8, textAlign: 'right' }}>
+                  {STORE_ABBR[sid] ?? sid}
+                </Text>
+              </View>
+            );
+          })}
+          <View style={{ paddingBottom: 8 }} />
+        </View>
+      ) : null}
     </View>
   );
 }
