@@ -85,7 +85,7 @@ export function compRows(catKey: string, storeIds: string[]): CompItem[] {
       item: it.label,
       id: it.id,
       cat: catKey,
-      unit: cat.unit,
+      unit: it.unit ?? cat.unit,
       prices: storeIds.map((sid) => livePriceOf(sid, catKey, it.id)),
     }))
     .filter((r) => r.prices.some((p) => p != null));
@@ -251,7 +251,7 @@ export function areaDeals(storeIds: string[], area?: string): AreaDeal[] {
         save: priced[1].p - priced[0].p,
         store: STORE_ABBR[priced[0].sid] ?? priced[0].sid,
         price: priced[0].p,
-        unit: cat.unit,
+        unit: it.unit ?? cat.unit,
       });
     }
   }
@@ -268,7 +268,7 @@ export function areaCheapest(storeIds: string[]): Chip[] {
       for (const sid of storeIds) {
         const p = comparablePriceOf(sid, cat.key, it.id);
         if (p != null && (!best || p < best.price)) {
-          best = { name: it.label, price: p, store: STORE_ABBR[sid] ?? sid, unit: cat.unit };
+          best = { name: it.label, price: p, store: STORE_ABBR[sid] ?? sid, unit: it.unit ?? cat.unit };
         }
       }
     }

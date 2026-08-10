@@ -37,6 +37,8 @@ const SPECS = {
   'beef|rib_steak':        { accept: ['rib steak'], reject: ['thin','eye','boneless','roast','short','chicken','mock','lamb','veal','flat', ...MEAT_REJECT], lb: true },
   'beef|flanken':          { accept: ['flanken'], reject: ['boneless','roast','end','tip','ground', ...MEAT_REJECT], lb: true },
   'beef|brisket':          { accept: ['1st cut brisket','1 st cut brisket'], reject: ['corned','2nd','second','veal','pastrami','whole','deckle','smoked','pulled','krisp','chips', ...MEAT_REJECT], lb: true },
+  // Hot dogs — packaged/branded (NOT per lb). Cheapest beef frank package per store.
+  'beef|hotdogs':          { accept: ['hot dog','hotdog','frank'], reject: ['sauce','red hot','buffalo','cayenne','wing','ketchup','mustard','relish','pepper','bun','roll','blanket','blank','pastry','dough','pretzel','pocket','pizza','turkey','chicken','veggie','plant','tofu','vegan','soy','beyond','impossible'], lb: false },
   // Dairy (per item). Only where the standard size is in the name — otherwise omit (falls back).
   'dairy|eggs':            { accept: ['egg'], reject: ['liquid','white','hard boil','quail','duck','scotch','powder','substitute','beater','organic','free range','pasture','plant','vegan','chocolate','candy','salad','roll','noodle'], sizes: ['dozen','12 ct','12ct','1 doz','12 count','12 large','grade a'] },
   'dairy|milk':            { accept: ['milk'], reject: [...ALT,'buttermilk','condensed','evapor','powder','choc','vanilla','strawberry','ricotta','cheese','cream','latte','coffee','cappuccino','shake','nesquik','fairlife','lactaid','organic','goat','stonyfield','horizon','cornflake','cereal','klik','kariot','snack','pillow'], sizes: [' 64 oz','1/2 gal','half gal','1/2 gallon'] },

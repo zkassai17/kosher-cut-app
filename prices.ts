@@ -7,7 +7,7 @@
 // Shape: PRICES[storeId][categoryKey][itemId] = price.
 
 export type Unit = 'lb' | 'ea';
-export interface Item { id: string; label: string }
+export interface Item { id: string; label: string; unit?: Unit } // unit overrides the category unit (e.g. packaged hot dogs = 'ea' in a per-lb Beef tab)
 export interface Category {
   key: string;
   label: string;
@@ -39,6 +39,7 @@ const BEEF_ITEMS: Item[] = [
   { id: 'rib_steak', label: 'Rib steak' },
   { id: 'flanken', label: 'Flanken' },
   { id: 'brisket', label: 'Brisket (1st cut)' },
+  { id: 'hotdogs', label: 'Hot dogs', unit: 'ea' }, // packaged/branded → priced per package, brand comparison
 ];
 
 const DAIRY_ITEMS: Item[] = [
@@ -158,7 +159,7 @@ export const PRICES_UPDATED = 'Jul 30, 2026';
 export function itemMeta(cat: string, id: string): { label: string; unit: Unit } | null {
   const c = CATEGORIES.find((x) => x.key === cat);
   const it = c?.items.find((i) => i.id === id);
-  return c && it ? { label: it.label, unit: c.unit } : null;
+  return c && it ? { label: it.label, unit: it.unit ?? c.unit } : null;
 }
 
 // Stores that price meat BY THE PACKAGE, not per pound (premium butchers). Their

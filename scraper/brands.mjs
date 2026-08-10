@@ -108,6 +108,23 @@ export const SPECS = {
     variants: ['large', 'extra large', 'jumbo', 'organic', 'brown', 'cage free'],
     blockBrands: ['Kinder', 'Quaker', 'Cadbury', 'Grade', 'Dozen', 'Round', 'Run', 'Ace', 'Pine', 'Robert', 'Elevated', 'Happy', 'Clinton', 'Dutch', 'Anatolia', 'Etopihen'],
   },
+  hotdogs: {
+    maxPrice: 20, // drop 40oz+ bulk/party packs — keep standard packages comparable
+    accept: ['hot dog', 'hotdog', 'frank'],
+    // "frank" also hits Frank's RedHot SAUCE, buns, pigs-in-blankets, and non-beef franks.
+    reject: [
+      'sauce', 'red hot', 'buffalo', 'cayenne', 'wing', 'ketchup', 'mustard', 'relish', 'pepper',
+      'bun', 'roll', 'blanket', 'blank', 'pastry', 'dough', 'pretzel', 'pocket', 'pizza',
+      'turkey', 'chicken', 'veggie', 'plant', 'tofu', 'vegan', 'soy', 'beyond', 'impossible',
+    ],
+    brands: {
+      'a&h': 'A&H', 'a & h': 'A&H', abeles: 'A&H', solomon: "Solomon's", 'jack': "Jack's Gourmet",
+      'shor habor': 'Shor Habor', 'hebrew national': 'Hebrew National', 'meal mart': 'Meal Mart', 'glatt express': 'Glatt Express',
+      frankel: "Frankel's", 'spring valley': 'Spring Valley',
+    },
+    variants: ['reduced fat', 'cocktail', 'stadium', 'skinless'],
+    blockBrands: ["Frank's", 'Franks', 'Kraft', 'Heinz', 'Empire', 'New', 'Frankischer'],
+  },
 };
 
 const norm = (s) => (s || '').toLowerCase();
