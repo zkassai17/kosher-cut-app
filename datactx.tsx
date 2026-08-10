@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
-import { setCatalog, setCurated } from './catalog';
+import { setBrands, setCatalog, setCurated } from './catalog';
 import { PRICES_UPDATED } from './prices';
 import { fetchRemoteData, loadCachedData } from './remote';
 import { setWeeklyAds } from './weeklyAds';
@@ -20,10 +20,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let alive = true;
-    const apply = (data: { updatedAt?: string; catalog?: any; weeklyAds?: any; curated?: any } | null) => {
+    const apply = (data: { updatedAt?: string; catalog?: any; weeklyAds?: any; curated?: any; brands?: any } | null) => {
       if (!alive || !data) return;
       setCatalog(data.catalog);
       setCurated(data.curated);
+      setBrands(data.brands);
       setWeeklyAds(data.weeklyAds);
       if (data.updatedAt) setUpdatedAt(data.updatedAt);
       setVersion((v) => v + 1);

@@ -51,6 +51,35 @@ export function curatedPriceOf(storeId: string, cat: string, item: string): numb
   return typeof v === 'number' ? v : undefined;
 }
 
+/* ---------- Brand-level comparison (Prices drill-down + brand deals) ---------- */
+// Per-area, per-item matched brand rows computed daily by scraper/brands.mjs.
+
+export interface BrandRow {
+  brand: string;
+  variant: string | null;
+  prices: Record<string, number>; // storeId → price
+  sizes: Record<string, string | null>; // storeId → that store's package size (may be null)
+  sizeWarn: boolean; // sizes/prices diverge → don't crown a winner, show "sizes differ"
+}
+export interface BrandItem {
+  from: Record<string, number>; // storeId → cheapest brand price (the collapsed "from" number)
+  rows: BrandRow[];
+  other: Record<string, { name: string; price: number }[]>; // per-store unmatched brands
+}
+
+let BRANDS: Record<string, Record<string, BrandItem>> = {};
+export function setBrands(data: Record<string, Record<string, BrandItem>> | undefined | null): void {
+  BRANDS = data && typeof data === 'object' ? data : {};
+}
+export function brandsFor(area: string, itemId: string): BrandItem | undefined {
+  return BRANDS[area]?.[itemId];
+}
+// The collapsed "from $X" price for a store, or undefined when no brand data.
+export function brandFromPrice(area: string, itemId: string, storeId: string): number | undefined {
+  const v = BRANDS[area]?.[itemId]?.from?.[storeId];
+  return typeof v === 'number' ? v : undefined;
+}
+
 export const hasCatalog = (storeId: string): boolean => (CATALOG[storeId]?.length ?? 0) > 0;
 
 export const catalogSize = (storeId: string): number => CATALOG[storeId]?.length ?? 0;
