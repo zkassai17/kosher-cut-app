@@ -192,11 +192,11 @@ export function CutRow({ c }: { c: Cut }) {
 // Long lists start capped with a "Show all" toggle.
 const BRAND_ROWS_SHOWN = 8;
 const COL_W = 64;
-export function BrandTable({ item, storeIds }: { item: BrandItem; storeIds: string[] }) {
+export function BrandTable({ item, storeIds, full }: { item: BrandItem; storeIds: string[]; full?: boolean }) {
   const { t } = useUI();
   const [showAll, setShowAll] = useState(false);
   const all = item.rows.filter((r) => storeIds.some((sid) => r.prices[sid] != null));
-  const rows = showAll ? all : all.slice(0, BRAND_ROWS_SHOWN);
+  const rows = full || showAll ? all : all.slice(0, BRAND_ROWS_SHOWN);
   return (
     <View style={{ backgroundColor: t.surface, borderRadius: 14, marginBottom: 12, paddingHorizontal: 14 }}>
       {/* Pinned store-column header */}
@@ -241,7 +241,7 @@ export function BrandTable({ item, storeIds }: { item: BrandItem; storeIds: stri
         );
       })}
 
-      {all.length > BRAND_ROWS_SHOWN ? (
+      {!full && all.length > BRAND_ROWS_SHOWN ? (
         <Pressable onPress={() => setShowAll((v) => !v)} style={{ paddingVertical: 11, alignItems: 'center', borderTopWidth: 1, borderTopColor: t.line }}>
           <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sans.semi }}>
             {showAll ? 'Show less' : `Show all ${all.length} brands`}
@@ -254,6 +254,58 @@ export function BrandTable({ item, storeIds }: { item: BrandItem; storeIds: stri
   );
 }
 
+// Full-page brand comparison for one item (Milk, Cream cheese…). Slides in over
+// the Prices tab; scrolls through every brand across the nearby stores.
+export function BrandDetailModal({
+  visible,
+  onClose,
+  item,
+  storeIds,
+  title,
+  subtitle,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  item: BrandItem | null;
+  storeIds: string[];
+  title: string;
+  subtitle?: string;
+}) {
+  const { s, t } = useUI();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={[s.root, { paddingTop: insets.top + 8 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingBottom: 10 }}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 22, color: t.ink, marginTop: -3 }}>‹</Text>
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: t.ink, fontSize: 19, fontFamily: sans.bold }} numberOfLines={1}>
+              {title}
+            </Text>
+            {subtitle ? <Text style={{ color: t.inkSoft, fontSize: 12.5, fontFamily: sans.med, marginTop: 1 }}>{subtitle}</Text> : null}
+          </View>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: insets.bottom + 30 }}>
+          {item ? (
+            <BrandTable item={item} storeIds={storeIds} full />
+          ) : (
+            <Text style={{ color: t.inkSoft, textAlign: 'center', marginTop: 40, fontFamily: sans.med }}>No brands to compare here yet.</Text>
+          )}
+          <Text style={{ color: t.inkFaint, fontSize: 11.5, textAlign: 'center', marginTop: 14, fontFamily: sans.med }}>
+            Cheapest is highlighted · always confirm in-store
+          </Text>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
 export function CompareRow({
   item,
   unit,
@@ -263,8 +315,10 @@ export function CompareRow({
   id,
   checked,
   onToggle,
+  onPress,
   soloClean,
   pkgFlags,
+  chevron,
 }: {
   item: string;
   unit: Unit;
@@ -274,8 +328,10 @@ export function CompareRow({
   id?: string;
   checked?: boolean; // override the ✓ state (e.g. "this trip" picker)
   onToggle?: () => void; // override the add/remove action
+  onPress?: () => void; // whole-row tap (e.g. open the brand detail page)
   soloClean?: boolean; // single-store row shown under an "only at one store" header — drop the redundant caption
   pkgFlags?: boolean[]; // parallel to storeIds: true = a package price (not per-lb), shown for reference only
+  chevron?: boolean; // show a › affordance (row opens a detail page)
 }) {
   const { s, t } = useUI();
   const basket = useBasket();
@@ -332,7 +388,7 @@ export function CompareRow({
     <View style={s.cutRow}>
       <Pressable
         style={s.cutLeft}
-        onPress={canAdd ? doToggle : undefined}
+        onPress={onPress ?? (canAdd ? doToggle : undefined)}
         onLongPress={reportPrice}
         hitSlop={6}
       >
@@ -358,6 +414,7 @@ export function CompareRow({
             </Animated.View>
           ) : null}
           <Text style={[s.cutName, { flexShrink: 1 }]}>{item}</Text>
+          {chevron ? <Text style={{ color: t.inkFaint, fontSize: 17, marginLeft: 6, marginTop: -1 }}>›</Text> : null}
         </View>
         {caption ? (
           multi && save > 0 ? (

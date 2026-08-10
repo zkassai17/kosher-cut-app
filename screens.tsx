@@ -11,7 +11,7 @@ import { useAuth } from './auth';
 import { track } from './track';
 import { AnimatedMoney } from './anim';
 import {
-  BrandTable,
+  BrandDetailModal,
   CheapestChips,
   CompareRow,
   DealRow,
@@ -39,7 +39,7 @@ import {
 } from './data';
 import { useData } from './datactx';
 import { decodeList, shareText } from './share';
-import { brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
+import { BrandItem, brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
 import { sans } from './theme';
 
@@ -55,7 +55,7 @@ export function PricesScreen() {
   const [cat, setCat] = useState('chicken');
   const [q, setQ] = useState('');
   const [showDeals, setShowDeals] = useState(false);
-  const [openBrand, setOpenBrand] = useState<string | null>(null); // which row's brand table is expanded
+  const [brandDetail, setBrandDetail] = useState<{ item: BrandItem; storeIds: string[]; title: string; subtitle: string } | null>(null);
   const query = q.trim().toLowerCase();
 
   // Stores in the picked area that actually list a given category.
@@ -152,7 +152,6 @@ export function PricesScreen() {
                   const bi = brandsFor(area, r.id);
                   const brandCount = bi ? bi.rows.filter((row) => b.ids.some((sid) => row.prices[sid] != null)).length : 0;
                   const hasBrands = !!bi && brandCount > 0;
-                  const open = openBrand === key;
                   // Decision A: collapsed row shows each store's cheapest-brand "from" price.
                   const prices = hasBrands
                     ? b.ids.map((sid, i) => brandFromPrice(area, r.id, sid) ?? r.prices[i])
@@ -170,34 +169,31 @@ export function PricesScreen() {
                       }
                     }
                   }
+                  const openDetail =
+                    hasBrands && bi
+                      ? () => {
+                          setBrandDetail({
+                            item: bi,
+                            storeIds: b.ids,
+                            title: r.item,
+                            subtitle: `${brandCount} brands · ${b.ids.map((id) => STORE_ABBR[id] ?? id).join(' vs ')}`,
+                          });
+                          track('brand_open', { area: origin.areaId, item: r.id });
+                        }
+                      : undefined;
                   return (
-                    <View key={key}>
-                      <CompareRow
-                        // Title becomes the cheapest actual product ("Norman's cream cheese"),
-                        // so the shopper sees which brand wins right in the name.
-                        item={hasBrands && cheapBrand ? `${cheapBrand.label} ${r.item.toLowerCase()}` : r.item}
-                        unit={r.unit}
-                        storeIds={b.ids}
-                        prices={prices}
-                        pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
-                      />
-                      {hasBrands ? (
-                        <Pressable
-                          onPress={() => {
-                            setOpenBrand(open ? null : key);
-                            if (!open) track('brand_open', { area: origin.areaId, item: r.id });
-                          }}
-                          hitSlop={6}
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingBottom: 10, marginTop: -4 }}
-                        >
-                          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sansSemi }}>
-                            {open ? 'Hide brands' : `Compare ${brandCount} brand${brandCount > 1 ? 's' : ''}`}
-                          </Text>
-                          <Text style={{ color: t.brand, fontSize: 11 }}>{open ? '▲' : '▼'}</Text>
-                        </Pressable>
-                      ) : null}
-                      {open && bi ? <BrandTable item={bi} storeIds={b.ids} /> : null}
-                    </View>
+                    <CompareRow
+                      key={key}
+                      // Title = the cheapest actual product ("Norman's cream cheese"); tap opens
+                      // the full brand page.
+                      item={hasBrands && cheapBrand ? `${cheapBrand.label} ${r.item.toLowerCase()}` : r.item}
+                      unit={r.unit}
+                      storeIds={b.ids}
+                      prices={prices}
+                      pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
+                      onPress={openDetail}
+                      chevron={hasBrands}
+                    />
                   );
                 })}
               </View>
@@ -272,6 +268,14 @@ export function PricesScreen() {
         ) : null}
       </ScrollView>
       <DealsModal visible={showDeals} onClose={() => setShowDeals(false)} />
+      <BrandDetailModal
+        visible={!!brandDetail}
+        onClose={() => setBrandDetail(null)}
+        item={brandDetail?.item ?? null}
+        storeIds={brandDetail?.storeIds ?? []}
+        title={brandDetail?.title ?? ''}
+        subtitle={brandDetail?.subtitle}
+      />
     </View>
   );
 }
