@@ -521,49 +521,49 @@ export function ListScreen() {
     <View style={s.root}>
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* 1-store (easiest) vs split-by-store (cheapest) toggle — primary control, up top */}
-        {!empty ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              backgroundColor: t.surface,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: t.line,
-              padding: 3,
-              marginHorizontal: 18,
-              marginTop: 10,
-              marginBottom: 4,
-            }}
-          >
-            {(['one', 'split'] as const).map((m) => {
-              const on = listMode === m;
-              return (
-                <Pressable
-                  key={m}
-                  onPress={() => setListMode(m)}
-                  style={{ flex: 1, paddingVertical: 8, borderRadius: 9, backgroundColor: on ? t.brand : 'transparent', alignItems: 'center' }}
-                >
-                  <Text style={{ color: on ? '#fff' : t.inkSoft, fontSize: 13, fontFamily: sansBold }}>
-                    {m === 'one' ? '1 store' : 'Split & save'}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
-
-        {/* One clean line: area · stores on the left, the list picker + share on the right. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 2 }}>
-          <Text numberOfLines={1} style={{ flex: 1, color: t.inkSoft, fontSize: 12.5, fontFamily: sansMed }}>
-            {origin.label}
-            {active.length ? ` · ${active.map((id) => STORE_ABBR[id] ?? id).join(' · ')}` : ''}
-          </Text>
+        {/* One control row: mode toggle (compact) + list picker + share. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 2 }}>
+          {!empty ? (
+            <View
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                backgroundColor: t.surface,
+                borderRadius: 11,
+                borderWidth: 1,
+                borderColor: t.line,
+                padding: 2.5,
+              }}
+            >
+              {(['one', 'split'] as const).map((m) => {
+                const on = listMode === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => setListMode(m)}
+                    style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: on ? t.brand : 'transparent', alignItems: 'center' }}
+                  >
+                    <Text numberOfLines={1} style={{ color: on ? '#fff' : t.inkSoft, fontSize: 12, fontFamily: sansBold }}>
+                      {m === 'one' ? '1 store' : 'Split & save'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
           <ListPicker />
           <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
             <Text style={{ fontSize: 16, color: t.brand, marginTop: -1 }}>↗</Text>
           </Pressable>
         </View>
+
+        {/* Area · stores caption. */}
+        <Text numberOfLines={1} style={{ color: t.inkSoft, fontSize: 12.5, fontFamily: sansMed, paddingHorizontal: 18, paddingTop: 5, paddingBottom: 2 }}>
+          {origin.label}
+          {active.length ? ` · ${active.map((id) => STORE_ABBR[id] ?? id).join(' · ')}` : ''}
+        </Text>
 
         {empty ? (
           <View style={{ alignItems: 'center', paddingHorizontal: 40, marginTop: 40 }}>
