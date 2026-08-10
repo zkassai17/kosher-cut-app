@@ -173,7 +173,9 @@ export function PricesScreen() {
                   return (
                     <View key={key}>
                       <CompareRow
-                        item={r.item}
+                        // Title becomes the cheapest actual product ("Norman's cream cheese"),
+                        // so the shopper sees which brand wins right in the name.
+                        item={hasBrands && cheapBrand ? `${cheapBrand.label} ${r.item.toLowerCase()}` : r.item}
                         unit={r.unit}
                         storeIds={b.ids}
                         prices={prices}
@@ -188,12 +190,8 @@ export function PricesScreen() {
                           hitSlop={6}
                           style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingBottom: 10, marginTop: -4 }}
                         >
-                          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sansSemi }} numberOfLines={1}>
-                            {open
-                              ? 'Hide brands'
-                              : cheapBrand
-                              ? `Cheapest: ${cheapBrand.label} ${money(cheapBrand.price)} · ${brandCount} brands`
-                              : `Compare ${brandCount} brand${brandCount > 1 ? 's' : ''}`}
+                          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sansSemi }}>
+                            {open ? 'Hide brands' : `Compare ${brandCount} brand${brandCount > 1 ? 's' : ''}`}
                           </Text>
                           <Text style={{ color: t.brand, fontSize: 11 }}>{open ? '▲' : '▼'}</Text>
                         </Pressable>
