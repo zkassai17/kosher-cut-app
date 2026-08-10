@@ -278,6 +278,8 @@ async function run() {
   const curated = computeCurated(out); // verified category prices → keeps the tabs fresh daily
   const brands = computeBrands(out, AREA_STORES); // per-area brand comparison for the drill-down
   writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, curated, brands, ...(weeklyAds ? { weeklyAds } : {}) }));
+  // Compact overlay bundled into the app as the offline floor (no catalog → ~50KB).
+  writeFileSync(join(__dirname, '..', 'feed-overlay.json'), JSON.stringify({ updatedAt: stamp, curated, brands }));
 
   // Also refresh the bundled snapshot the app imports (offline / first-render
   // fallback) so it carries the same products + AI keys as the feed.

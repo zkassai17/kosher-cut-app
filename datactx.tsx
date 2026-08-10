@@ -4,6 +4,10 @@ import { setBrands, setCatalog, setCurated } from './catalog';
 import { PRICES_UPDATED } from './prices';
 import { fetchRemoteData, loadCachedData } from './remote';
 import { setWeeklyAds } from './weeklyAds';
+// Compact bundled floor (curated prices + brand comparison), ~50KB. Guarantees
+// the tabs/drill-down have data offline and before the remote feed loads; a
+// fresher remote feed overrides it. Emitted by the scraper alongside data.json.
+import overlay from './feed-overlay.json';
 
 // Exposes the "prices as of" date and bumps `version` whenever fresher data is
 // swapped in, so screens re-render with the new catalog.
@@ -22,13 +26,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     let alive = true;
     const apply = (data: { updatedAt?: string; catalog?: any; weeklyAds?: any; curated?: any; brands?: any } | null) => {
       if (!alive || !data) return;
-      setCatalog(data.catalog);
-      setCurated(data.curated);
-      setBrands(data.brands);
+      if (data.catalog) setCatalog(data.catalog);
+      // Only override the overlay fields when the incoming feed actually carries
+      // them — so an older remote feed (no brands yet) can't wipe the bundled floor.
+      if (data.curated) setCurated(data.curated);
+      if (data.brands) setBrands(data.brands);
       setWeeklyAds(data.weeklyAds);
       if (data.updatedAt) setUpdatedAt(data.updatedAt);
       setVersion((v) => v + 1);
     };
+    apply(overlay); // bundled floor: curated + brands available immediately
     (async () => {
       apply(await loadCachedData()); // instant: last saved feed
       apply(await fetchRemoteData()); // background: newest feed

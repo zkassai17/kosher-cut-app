@@ -4,7 +4,7 @@
 
 import { CATEGORIES, isPackagePriced, itemMeta, money, priceOf, PRICES, Unit, unitSuffix } from './prices';
 
-import { catalogIsLb, catalogPriceOf, curatedPriceOf } from './catalog';
+import { brandsFor, catalogIsLb, catalogPriceOf, curatedPriceOf } from './catalog';
 
 // Live curated price: the daily feed's VERIFIED value if present, else the bundled
 // hand-typed table (offline fallback). Keeps the category tabs fresh automatically
@@ -219,7 +219,24 @@ export interface AreaDeal {
   unit: Unit;
 }
 
-export function areaDeals(storeIds: string[]): AreaDeal[] {
+// The cheapest confidently-matched brand at a store for an item — so a deal can
+// say WHICH brand ("Sour cream · Norman's"). Returns null when there's no brand
+// data (e.g. meat) or nothing matched, in which case the deal stays generic.
+function cheapestBrandAt(area: string | undefined, itemId: string, storeId: string): string | null {
+  if (!area) return null;
+  const bi = brandsFor(area, itemId);
+  if (!bi) return null;
+  let best: { p: number; label: string } | null = null;
+  for (const row of bi.rows) {
+    const p = row.prices[storeId];
+    if (p != null && (best == null || p < best.p)) {
+      best = { p, label: `${row.brand}${row.variant ? ' ' + row.variant : ''}` };
+    }
+  }
+  return best?.label ?? null;
+}
+
+export function areaDeals(storeIds: string[], area?: string): AreaDeal[] {
   const out: AreaDeal[] = [];
   for (const cat of CATEGORIES) {
     for (const it of cat.items) {
@@ -228,8 +245,9 @@ export function areaDeals(storeIds: string[]): AreaDeal[] {
         .filter((x): x is { sid: string; p: number } => x.p != null)
         .sort((a, b) => a.p - b.p);
       if (priced.length < 2 || priced[1].p === priced[0].p) continue; // need a real gap
+      const brand = cheapestBrandAt(area, it.id, priced[0].sid);
       out.push({
-        cut: it.label,
+        cut: brand ? `${it.label} · ${brand}` : it.label,
         save: priced[1].p - priced[0].p,
         store: STORE_ABBR[priced[0].sid] ?? priced[0].sid,
         price: priced[0].p,

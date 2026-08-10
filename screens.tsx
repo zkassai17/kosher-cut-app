@@ -11,6 +11,7 @@ import { useAuth } from './auth';
 import { track } from './track';
 import { AnimatedMoney } from './anim';
 import {
+  BrandTable,
   CheapestChips,
   CompareRow,
   DealRow,
@@ -38,7 +39,7 @@ import {
 } from './data';
 import { useData } from './datactx';
 import { decodeList, shareText } from './share';
-import { cleanName, hasCatalog, searchCatalog } from './catalog';
+import { brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
 import { sans } from './theme';
 
@@ -54,6 +55,7 @@ export function PricesScreen() {
   const [cat, setCat] = useState('chicken');
   const [q, setQ] = useState('');
   const [showDeals, setShowDeals] = useState(false);
+  const [openBrand, setOpenBrand] = useState<string | null>(null); // which row's brand table is expanded
   const query = q.trim().toLowerCase();
 
   // Stores in the picked area that actually list a given category.
@@ -144,16 +146,45 @@ export function PricesScreen() {
                 {b.cat.label} · {b.ids.map((id) => STORE_ABBR[id] ?? id).join(' vs ')}
               </Text>
               <View style={{ paddingHorizontal: 18 }}>
-                {cmp.map((r) => (
-                  <CompareRow
-                    key={`${r.cat}-${r.id}`}
-                    item={r.item}
-                    unit={r.unit}
-                    storeIds={b.ids}
-                    prices={r.prices}
-                    pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
-                  />
-                ))}
+                {cmp.map((r) => {
+                  const key = `${r.cat}-${r.id}`;
+                  const area = origin.areaId ?? '';
+                  const bi = brandsFor(area, r.id);
+                  const brandCount = bi ? bi.rows.filter((row) => b.ids.some((sid) => row.prices[sid] != null)).length : 0;
+                  const hasBrands = !!bi && brandCount > 0;
+                  const open = openBrand === key;
+                  // Decision A: collapsed row shows each store's cheapest-brand "from" price.
+                  const prices = hasBrands
+                    ? b.ids.map((sid, i) => brandFromPrice(area, r.id, sid) ?? r.prices[i])
+                    : r.prices;
+                  return (
+                    <View key={key}>
+                      <CompareRow
+                        item={r.item}
+                        unit={r.unit}
+                        storeIds={b.ids}
+                        prices={prices}
+                        pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
+                      />
+                      {hasBrands ? (
+                        <Pressable
+                          onPress={() => {
+                            setOpenBrand(open ? null : key);
+                            if (!open) track('brand_open', { area: origin.areaId, item: r.id });
+                          }}
+                          hitSlop={6}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingBottom: 10, marginTop: -4 }}
+                        >
+                          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sansSemi }}>
+                            {open ? 'Hide brands' : `from · compare ${brandCount} brand${brandCount > 1 ? 's' : ''}`}
+                          </Text>
+                          <Text style={{ color: t.brand, fontSize: 11 }}>{open ? '▲' : '▼'}</Text>
+                        </Pressable>
+                      ) : null}
+                      {open && bi ? <BrandTable item={bi} storeIds={b.ids} /> : null}
+                    </View>
+                  );
+                })}
               </View>
               {solo.length ? (
                 <>
@@ -238,7 +269,7 @@ export function DealsModal({ visible, onClose }: { visible: boolean; onClose: ()
   // Deals follow the location: same area stores as Prices — only ones we have
   // prices for (Cedar/Ma'adan are order-by-request, no data).
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
-  const deals = areaDeals(active);
+  const deals = areaDeals(active, origin.areaId);
   const chips = areaCheapest(active);
 
   return (

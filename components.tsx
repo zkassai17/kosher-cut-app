@@ -29,7 +29,7 @@ import { Pop } from './anim';
 import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
 import { AREAS, areaStores, PriceStatus, StoreWithDist } from './stores';
-import { hasCatalog } from './catalog';
+import { BrandItem, cleanName, hasCatalog } from './catalog';
 import { LegalDoc, PRIVACY, TERMS } from './legal';
 import {
   AreaDeal,
@@ -186,6 +186,84 @@ export function CutRow({ c }: { c: Cut }) {
 }
 
 /* Compare one item across the stores near you (2–3 columns, cheapest green). */
+// Expanded brand-by-brand comparison shown under a Prices row when tapped.
+// Each matched brand shows every store's price; cheapest is highlighted UNLESS
+// the row is size-flagged (then we show "sizes differ" and crown no winner).
+export function BrandTable({ item, storeIds }: { item: BrandItem; storeIds: string[] }) {
+  const { t } = useUI();
+  const rows = item.rows.filter((r) => storeIds.some((sid) => r.prices[sid] != null));
+  const anyOther = storeIds.some((sid) => (item.other[sid] || []).length > 0);
+  return (
+    <View style={{ paddingHorizontal: 18, paddingBottom: 12, backgroundColor: t.surface, borderRadius: 12, marginBottom: 10 }}>
+      {rows.map((r, idx) => {
+        const present = storeIds.map((sid) => r.prices[sid]).filter((p): p is number => p != null);
+        const min = present.length ? Math.min(...present) : null;
+        const canWin = !r.sizeWarn && present.length >= 2 && Math.min(...present) < Math.max(...present);
+        const knownSizes = [...new Set(storeIds.map((sid) => r.sizes[sid]).filter(Boolean) as string[])];
+        const sizeLabel = r.sizeWarn ? 'sizes differ' : knownSizes.length === 1 ? knownSizes[0] : '';
+        return (
+          <View
+            key={idx}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: t.line }}
+          >
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text style={{ color: t.ink, fontSize: 13.5, fontFamily: sans.semi }}>
+                {r.brand}
+                {r.variant ? ` · ${r.variant}` : ''}
+              </Text>
+              {sizeLabel ? (
+                <Text style={{ color: t.inkFaint, fontSize: 11, marginTop: 1, fontFamily: sans.med }}>{sizeLabel}</Text>
+              ) : null}
+            </View>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {storeIds.map((sid) => {
+                const p = r.prices[sid];
+                const best = canWin && p != null && p === min;
+                return (
+                  <View
+                    key={sid}
+                    style={{
+                      minWidth: 62,
+                      alignItems: 'center',
+                      paddingVertical: 4,
+                      borderRadius: 9,
+                      borderWidth: 1,
+                      borderColor: best ? t.brand : t.line,
+                      backgroundColor: best ? t.brandSoft : 'transparent',
+                    }}
+                  >
+                    <Text style={{ color: t.inkFaint, fontSize: 9.5, fontFamily: sans.med }}>{STORE_ABBR[sid] ?? sid}</Text>
+                    <Text style={{ color: p == null ? t.inkFaint : best ? t.brand : t.ink, fontSize: 13, fontFamily: sans.bold }}>
+                      {p == null ? '—' : money(p)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        );
+      })}
+      {anyOther ? (
+        <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: t.line, paddingTop: 8 }}>
+          <Text style={{ color: t.inkFaint, fontSize: 10.5, fontFamily: sans.semi, letterSpacing: 0.3, marginBottom: 4 }}>
+            OTHER BRANDS HERE
+          </Text>
+          {storeIds.map((sid) => {
+            const list = item.other[sid] || [];
+            if (!list.length) return null;
+            return (
+              <Text key={sid} style={{ color: t.inkSoft, fontSize: 11.5, marginBottom: 3, fontFamily: sans.med, lineHeight: 16 }}>
+                <Text style={{ fontFamily: sans.bold }}>{STORE_ABBR[sid] ?? sid}: </Text>
+                {list.slice(0, 4).map((o) => `${cleanName(o.name)} ${money(o.price)}`).join('  ·  ')}
+              </Text>
+            );
+          })}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export function CompareRow({
   item,
   unit,
