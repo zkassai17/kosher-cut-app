@@ -65,8 +65,15 @@ export const SPECS = {
   },
   milk: {
     maxPrice: 10,
+    core: 'milk', // must actually END in "milk" — not "milk chocolate" / "whole milk yogurt"
     accept: ['milk'],
-    reject: ['chocolate milk', 'coconut', 'almond', 'oat', 'soy', 'condensed', 'evaporated', 'powder', 'shake'],
+    // "milk" shows up in candy ("milk chocolate"), snacks, soap, creamers, etc.
+    // Keep only drinking milk: reject anything that smells like not-a-carton.
+    reject: [
+      'chocolate', 'cocoa', 'candy', 'bar', 'wafer', 'chip', 'soap', 'honey', 'cereal', 'cookie', 'snack', 'treat',
+      'powder', 'shake', 'milky', 'buttermilk', 'coconut', 'almond', 'oat', 'soy', 'rice', 'cashew', 'goat',
+      'condensed', 'evaporated', 'creamer', 'coffee', 'ice cream', 'pudding', 'formula', 'spread', 'straw', 'magic', 'drink',
+    ],
     brands: {
       tuscan: 'Tuscan', 'golden flow': 'Golden Flow', mehadrin: 'Mehadrin', ahava: 'Ahava',
       'pride of the farm': 'Pride of the Farm', lactaid: 'Lactaid', norman: "Norman's",
@@ -86,6 +93,25 @@ export const SPECS = {
 };
 
 const norm = (s) => (s || '').toLowerCase();
+
+// True when the product's core noun is `core` (e.g. milk): strip trailing
+// size/fat/packaging words and require the last real word to be `core`. This is
+// how we tell "Golden Flow Whole Milk" (real) from "Whole Milk Mozzarella",
+// "Whole Milk Yogurt", or "Milk Chocolate" (the word milk is just a modifier).
+const TAIL_STRIP = new Set([
+  'whole', 'skim', 'lowfat', 'low', 'fat', 'reduced', 'fatfree', 'lactose', 'free', 'half', 'gallon', 'gal', 'quart', 'qt',
+  'oz', 'fl', 'pt', 'pint', 'pasteurized', 'organic', 'vitamin', 'd', 'a', 'of', 'the', 'container', 'carton', 'jug', 'bottle',
+  'plus', 'ultra', 'filtered', 'grass', 'fed', 'natural', 'kosher', 'chalav', 'yisroel', 'cholov', '1', '2', '',
+]);
+function coreNounIs(name, core) {
+  let w = norm(name)
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\d+(\.\d+)?\s*(oz|lb|gal|gallon|qt|quart|ct|pk|fl|%|pt|pint)/g, ' ')
+    .replace(/[^a-z& ]/g, ' ');
+  const words = w.split(/\s+/).filter(Boolean);
+  while (words.length && TAIL_STRIP.has(words[words.length - 1])) words.pop();
+  return words[words.length - 1] === core;
+}
 
 // Words that are never a brand — item terms, variants, sizes, descriptors. Used
 // by extractBrand to find where the brand ends.
@@ -130,6 +156,7 @@ export function parseProduct(product, spec) {
   const name = norm(product.n);
   if (!spec.accept.some((a) => name.includes(a))) return null;
   if (spec.reject.some((r) => name.includes(r))) return null; // junk / wrong product
+  if (spec.core && !coreNounIs(product.n, spec.core)) return null; // "milk" is just a modifier here
   if (spec.maxPrice && product.p > spec.maxPrice) return null; // bulk / catering size — not a shopper comparison
   const sizeM = name.match(SIZE_RE);
   const size = sizeM ? `${sizeM[1]} ${sizeM[2].toLowerCase()}` : null;

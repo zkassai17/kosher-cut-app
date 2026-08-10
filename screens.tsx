@@ -157,6 +157,19 @@ export function PricesScreen() {
                   const prices = hasBrands
                     ? b.ids.map((sid, i) => brandFromPrice(area, r.id, sid) ?? r.prices[i])
                     : r.prices;
+                  // The single cheapest brand across the shown stores — so the row
+                  // says WHICH brand wins, not just a price.
+                  let cheapBrand: { label: string; price: number; sid: string } | null = null;
+                  if (hasBrands && bi) {
+                    for (const row of bi.rows) {
+                      for (const sid of b.ids) {
+                        const p = row.prices[sid];
+                        if (p != null && (cheapBrand == null || p < cheapBrand.price)) {
+                          cheapBrand = { label: row.variant ? `${row.brand} ${row.variant}` : row.brand, price: p, sid };
+                        }
+                      }
+                    }
+                  }
                   return (
                     <View key={key}>
                       <CompareRow
@@ -175,8 +188,12 @@ export function PricesScreen() {
                           hitSlop={6}
                           style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingBottom: 10, marginTop: -4 }}
                         >
-                          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sansSemi }}>
-                            {open ? 'Hide brands' : `from · compare ${brandCount} brand${brandCount > 1 ? 's' : ''}`}
+                          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sansSemi }} numberOfLines={1}>
+                            {open
+                              ? 'Hide brands'
+                              : cheapBrand
+                              ? `Cheapest: ${cheapBrand.label} ${money(cheapBrand.price)} · ${brandCount} brands`
+                              : `Compare ${brandCount} brand${brandCount > 1 ? 's' : ''}`}
                           </Text>
                           <Text style={{ color: t.brand, fontSize: 11 }}>{open ? '▲' : '▼'}</Text>
                         </Pressable>
