@@ -28,7 +28,7 @@ import { useBasket } from './basket';
 import { Pop } from './anim';
 import { display, sans } from './theme';
 import { WeeklyAd, weeklyAdFor } from './weeklyAds';
-import { AREAS, areaStores, PriceStatus, StoreWithDist } from './stores';
+import { AREAS, areaStores, milesBetween, PriceStatus, StoreWithDist } from './stores';
 import { BrandItem, BrandRow, cleanName, hasCatalog } from './catalog';
 import { LegalDoc, PRIVACY, TERMS } from './legal';
 import {
@@ -870,6 +870,11 @@ export function FeedHeader() {
   const { origin } = useLocation();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
+  // If the user's GPS/typed location is well outside the matched area, say so —
+  // so a Monsey user understands why they're seeing Teaneck instead of a bug.
+  const area = AREAS.find((a) => a.id === origin.areaId);
+  const nearestOnly =
+    origin.source === 'gps' && !!area && milesBetween(origin.lat, origin.lng, area.lat, area.lng) > 12;
   return (
     <View style={[s.feedHeaderWrap, { paddingTop: insets.top + 8 }]}>
       <View style={s.brandRow}>
@@ -883,6 +888,11 @@ export function FeedHeader() {
           <Text style={s.feedChevron}>▾</Text>
         </Pressable>
       </View>
+      {nearestOnly ? (
+        <Text numberOfLines={1} style={{ color: t.inkFaint, fontSize: 11.5, fontFamily: sans.med, textAlign: 'right', marginTop: 2 }}>
+          Showing {origin.label} · nearest covered area
+        </Text>
+      ) : null}
       <LocationModal visible={open} onClose={() => setOpen(false)} />
     </View>
   );
@@ -1395,6 +1405,21 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
   const [legal, setLegal] = useState<LegalDoc | null>(null); // Terms/Privacy viewer
 
   const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  // Turn raw auth/server errors into a short, human message (never dump JSON/HTTP).
+  const friendlyError = (msg?: string): string => {
+    if (!msg) return 'Something went wrong. Please try again.';
+    const m = msg.toLowerCase();
+    if (m.includes('invalid login') || m.includes('invalid credentials')) return 'Wrong email or password.';
+    if (m.includes('already registered') || m.includes('already been registered') || m.includes('already exists'))
+      return 'That email already has an account — try signing in.';
+    if (m.includes('email not confirmed')) return 'Please confirm your email first (check your inbox).';
+    if (m.includes('network') || m.includes('fetch') || m.includes('failed to')) return 'Network problem — check your connection and try again.';
+    if (m.includes('rate') || m.includes('too many')) return 'Too many tries — please wait a minute and try again.';
+    // Anything long or that looks like a raw JSON/HTTP dump → generic message.
+    if (msg.length > 100 || msg.includes('{') || msg.includes('"') || m.includes('http') || m.includes('status'))
+      return 'Something went wrong. Please try again.';
+    return msg;
+  };
   const submit = async () => {
     if (!email || !password) return setError('Please enter both email and password.');
     if (!validEmail(email)) return setError('Please enter a valid email address.');
@@ -1407,7 +1432,7 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
     setBusy(true);
     const res = mode === 'in' ? await signIn(email, password) : await signUp(email, password, wantsUpdates);
     setBusy(false);
-    if (res.error) return setError(res.error);
+    if (res.error) return setError(friendlyError(res.error));
     if (res.needsConfirmation) {
       Alert.alert('Check your email', `We sent a confirmation link to ${email.trim()}. Tap it, then come back and sign in.`);
       setMode('in');
@@ -1425,7 +1450,7 @@ export function SignInModal({ visible, onClose, gate }: { visible: boolean; onCl
     setBusy(true);
     const res = await signInWithGoogle();
     setBusy(false);
-    if (res.error) return setError(res.error);
+    if (res.error) return setError(friendlyError(res.error));
     onClose();
   };
 
