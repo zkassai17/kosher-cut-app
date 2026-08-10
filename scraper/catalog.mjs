@@ -20,6 +20,15 @@ import { fileURLToPath } from 'node:url';
 import { canonicalize } from './canonicalize.mjs';
 import { cedarWeeklyAd } from './cedar.mjs';
 import { computeCurated } from './curated.mjs';
+import { computeBrands } from './brands.mjs';
+
+// Which stores each area compares — mirrors AREAS/KSTORES in stores.ts.
+const AREA_STORES = {
+  teaneck: ['ge', 'gl'],
+  fivetowns: ['gourmetglatt', 'seasons_law'],
+  manhattan: ['six60one', 'kmp'],
+  lakewood: ['superstop'],
+};
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -267,7 +276,8 @@ async function run() {
   const stamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const feedPath = join(__dirname, '..', 'data.json');
   const curated = computeCurated(out); // verified category prices → keeps the tabs fresh daily
-  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, curated, ...(weeklyAds ? { weeklyAds } : {}) }));
+  const brands = computeBrands(out, AREA_STORES); // per-area brand comparison for the drill-down
+  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, curated, brands, ...(weeklyAds ? { weeklyAds } : {}) }));
 
   // Also refresh the bundled snapshot the app imports (offline / first-render
   // fallback) so it carries the same products + AI keys as the feed.
