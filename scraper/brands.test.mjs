@@ -24,8 +24,14 @@ test('known brand without a size is still confident (brand-only match)', () => {
   assert.equal(r.confident, true); // size optional — matched on brand
 });
 
-test('unknown brand → not confident (goes to other bucket)', () => {
-  const r = parseProduct({ n: 'Store Brand Cream Cheese 8 oz', p: 3.0 }, CC);
+test('long-tail brand is auto-extracted (not lost to "other")', () => {
+  const r = parseProduct({ n: 'Chobani Whole Milk Yogurt', p: 1.49 }, SPECS.yogurt);
+  assert.equal(r.brand, 'Chobani');
+  assert.equal(r.confident, true);
+});
+
+test('generic-leading name has no brand → goes to other bucket', () => {
+  const r = parseProduct({ n: 'Organic Cream Cheese 8 oz', p: 3.0 }, CC); // "organic" is a descriptor, not a brand
   assert.equal(r.brand, null);
   assert.equal(r.confident, false);
 });
@@ -34,7 +40,7 @@ test('computeBrands groups same brand+size across stores; from-price; other buck
   const catalog = {
     gourmetglatt: [
       { n: 'Philadelphia Cream Cheese 8 Oz', p: 5.59 },
-      { n: 'Store Brand Cream Cheese 8 oz', p: 3.0 }, // unknown brand → other
+      { n: 'Organic Cream Cheese 8 oz', p: 3.0 }, // generic-leading → no brand → other
     ],
     seasons_law: [{ n: 'Philadelphia Cream Cheese, 8 oz', p: 4.99 }],
   };
@@ -46,7 +52,7 @@ test('computeBrands groups same brand+size across stores; from-price; other buck
   assert.equal(row.sizes.gourmetglatt, '8 oz');
   assert.equal(cc.from.seasons_law, 4.99);
   assert.equal(cc.from.gourmetglatt, 5.59);
-  assert.ok(cc.other.gourmetglatt.some((o) => o.name.includes('Store Brand')));
+  assert.ok(cc.other.gourmetglatt.some((o) => o.name.includes('Organic')));
 });
 
 test('same brand+variant across stores is ONE row, recording each size for the UI to flag', () => {

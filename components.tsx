@@ -187,79 +187,69 @@ export function CutRow({ c }: { c: Cut }) {
 
 /* Compare one item across the stores near you (2–3 columns, cheapest green). */
 // Expanded brand-by-brand comparison shown under a Prices row when tapped.
-// Each matched brand shows every store's price; cheapest is highlighted UNLESS
-// the row is size-flagged (then we show "sizes differ" and crown no winner).
+// Store columns are pinned in a header; each brand's cheapest store is a filled
+// green pill — UNLESS the row is size-flagged (then "sizes differ", no winner).
+// Long lists start capped with a "Show all" toggle.
+const BRAND_ROWS_SHOWN = 8;
+const COL_W = 64;
 export function BrandTable({ item, storeIds }: { item: BrandItem; storeIds: string[] }) {
   const { t } = useUI();
-  const rows = item.rows.filter((r) => storeIds.some((sid) => r.prices[sid] != null));
-  const anyOther = storeIds.some((sid) => (item.other[sid] || []).length > 0);
+  const [showAll, setShowAll] = useState(false);
+  const all = item.rows.filter((r) => storeIds.some((sid) => r.prices[sid] != null));
+  const rows = showAll ? all : all.slice(0, BRAND_ROWS_SHOWN);
   return (
-    <View style={{ paddingHorizontal: 18, paddingBottom: 12, backgroundColor: t.surface, borderRadius: 12, marginBottom: 10 }}>
+    <View style={{ backgroundColor: t.surface, borderRadius: 14, marginBottom: 12, paddingHorizontal: 14 }}>
+      {/* Pinned store-column header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
+        <Text style={{ flex: 1, color: t.inkFaint, fontSize: 10, fontFamily: sans.semi, letterSpacing: 0.5 }}>BRAND</Text>
+        {storeIds.map((sid) => (
+          <Text key={sid} style={{ width: COL_W, textAlign: 'center', color: t.inkFaint, fontSize: 10, fontFamily: sans.semi, letterSpacing: 0.3 }}>
+            {STORE_ABBR[sid] ?? sid}
+          </Text>
+        ))}
+      </View>
+
       {rows.map((r, idx) => {
         const present = storeIds.map((sid) => r.prices[sid]).filter((p): p is number => p != null);
         const min = present.length ? Math.min(...present) : null;
         const canWin = !r.sizeWarn && present.length >= 2 && Math.min(...present) < Math.max(...present);
         const knownSizes = [...new Set(storeIds.map((sid) => r.sizes[sid]).filter(Boolean) as string[])];
-        const sizeLabel = r.sizeWarn ? 'sizes differ' : knownSizes.length === 1 ? knownSizes[0] : '';
+        const sub = r.sizeWarn ? 'sizes differ' : knownSizes.length === 1 ? knownSizes[0] : '';
         return (
-          <View
-            key={idx}
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: t.line }}
-          >
+          <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: t.line }}>
             <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={{ color: t.ink, fontSize: 13.5, fontFamily: sans.semi }}>
+              <Text style={{ color: t.ink, fontSize: 13.5, fontFamily: sans.bold }} numberOfLines={1}>
                 {r.brand}
-                {r.variant ? ` · ${r.variant}` : ''}
+                {r.variant ? <Text style={{ color: t.inkSoft, fontFamily: sans.med }}>{`  ${r.variant}`}</Text> : null}
               </Text>
-              {sizeLabel ? (
-                <Text style={{ color: t.inkFaint, fontSize: 11, marginTop: 1, fontFamily: sans.med }}>{sizeLabel}</Text>
-              ) : null}
+              {sub ? <Text style={{ color: t.inkFaint, fontSize: 10.5, marginTop: 1, fontFamily: sans.med }}>{sub}</Text> : null}
             </View>
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              {storeIds.map((sid) => {
-                const p = r.prices[sid];
-                const best = canWin && p != null && p === min;
-                return (
-                  <View
-                    key={sid}
-                    style={{
-                      minWidth: 62,
-                      alignItems: 'center',
-                      paddingVertical: 4,
-                      borderRadius: 9,
-                      borderWidth: 1,
-                      borderColor: best ? t.brand : t.line,
-                      backgroundColor: best ? t.brandSoft : 'transparent',
-                    }}
-                  >
-                    <Text style={{ color: t.inkFaint, fontSize: 9.5, fontFamily: sans.med }}>{STORE_ABBR[sid] ?? sid}</Text>
-                    <Text style={{ color: p == null ? t.inkFaint : best ? t.brand : t.ink, fontSize: 13, fontFamily: sans.bold }}>
+            {storeIds.map((sid) => {
+              const p = r.prices[sid];
+              const best = canWin && p != null && p === min;
+              return (
+                <View key={sid} style={{ width: COL_W, alignItems: 'center' }}>
+                  <View style={{ minWidth: 50, alignItems: 'center', paddingVertical: 4, borderRadius: 9, backgroundColor: best ? t.brand : 'transparent' }}>
+                    <Text style={{ color: p == null ? t.inkFaint : best ? '#fff' : t.ink, fontSize: 13, fontFamily: sans.bold }}>
                       {p == null ? '—' : money(p)}
                     </Text>
                   </View>
-                );
-              })}
-            </View>
+                </View>
+              );
+            })}
           </View>
         );
       })}
-      {anyOther ? (
-        <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: t.line, paddingTop: 8 }}>
-          <Text style={{ color: t.inkFaint, fontSize: 10.5, fontFamily: sans.semi, letterSpacing: 0.3, marginBottom: 4 }}>
-            OTHER BRANDS HERE
+
+      {all.length > BRAND_ROWS_SHOWN ? (
+        <Pressable onPress={() => setShowAll((v) => !v)} style={{ paddingVertical: 11, alignItems: 'center', borderTopWidth: 1, borderTopColor: t.line }}>
+          <Text style={{ color: t.brand, fontSize: 12.5, fontFamily: sans.semi }}>
+            {showAll ? 'Show less' : `Show all ${all.length} brands`}
           </Text>
-          {storeIds.map((sid) => {
-            const list = item.other[sid] || [];
-            if (!list.length) return null;
-            return (
-              <Text key={sid} style={{ color: t.inkSoft, fontSize: 11.5, marginBottom: 3, fontFamily: sans.med, lineHeight: 16 }}>
-                <Text style={{ fontFamily: sans.bold }}>{STORE_ABBR[sid] ?? sid}: </Text>
-                {list.slice(0, 4).map((o) => `${cleanName(o.name)} ${money(o.price)}`).join('  ·  ')}
-              </Text>
-            );
-          })}
-        </View>
-      ) : null}
+        </Pressable>
+      ) : (
+        <View style={{ paddingBottom: 8 }} />
+      )}
     </View>
   );
 }

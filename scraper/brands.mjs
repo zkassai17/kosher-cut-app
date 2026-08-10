@@ -87,6 +87,42 @@ export const SPECS = {
 
 const norm = (s) => (s || '').toLowerCase();
 
+// Words that are never a brand — item terms, variants, sizes, descriptors. Used
+// by extractBrand to find where the brand ends.
+const STOP = new Set([
+  'cream', 'cheese', 'sour', 'cottage', 'american', 'yogurt', 'yoghurt', 'milk', 'egg', 'eggs',
+  'spread', 'slice', 'sliced', 'slices', 'single', 'singles', 'whip', 'whipped', 'block', 'bar', 'cup', 'cups', 'stick', 'sticks', 'tub',
+  'parve', 'pareve', 'dairy', 'nonfat', 'non', 'fat', 'lowfat', 'low', 'reduced', 'light', 'lite', 'whole', 'skim', 'fatfree', 'skimmed',
+  'organic', 'plain', 'greek', 'original', 'natural', 'fresh', 'kosher', 'pasteurized', 'imitation', 'free', 'gluten', 'the', 'of', 'and', 'with', 'in',
+  'extra', 'mini', 'kids', 'kid', 'family', 'value', 'style', 'classic', 'simply', 'farm', 'farms', 'pack', 'count', 'large', 'small', 'curd', 'white', 'yellow',
+  'chalav', 'yisroel', 'cholov', 'vanilla', 'strawberry', 'coffee', 'berry', 'blueberry', 'peach', 'banana', 'chocolate', 'flavored', 'chive', 'chives', 'onion', 'scallion',
+]);
+
+// Multi-word brands to keep intact (checked as a phrase before single-token fallback).
+const MULTIWORD = [
+  'good culture', 'temp tee', 'golden flow', 'pride of the farm', 'bowl & basket', 'la yogurt', 'kite hill', 'les petites', 'so delicious',
+];
+
+const TITLE = (s) => s.replace(/\w[\w'&]*/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
+// Acronym/odd-case brands that TITLE would mangle — normalized after extraction.
+const GLOBAL_ALIASES = { 'j&j': 'J&J', 'j & j': 'J&J', jj: 'J&J', 'b&b': 'B&B' };
+
+// Pull the brand out of a messy product name: a known multi-word brand, else the
+// leading token(s) before the first item/descriptor/size word. Returns null when
+// the name starts with a non-brand word (generic/unbranded).
+function extractBrand(rawName) {
+  const lower = norm(rawName);
+  for (const mw of MULTIWORD) if (lower.includes(mw)) return TITLE(mw);
+  for (const w of rawName.replace(/[,]/g, ' ').split(/\s+/)) {
+    const lw = w.toLowerCase().replace(/[^a-z0-9%&']/g, '');
+    if (!lw) continue;
+    if (STOP.has(lw) || /\d/.test(lw) || lw.length === 1) return null; // starts generic → unbranded
+    return GLOBAL_ALIASES[lw] || TITLE(w.replace(/[.,]/g, '')); // first real token is the brand
+  }
+  return null;
+}
+
 // Parse one catalog product against an item spec.
 // → null when it isn't this item / is junk.
 // → { brand, size, variant, price, name, confident } otherwise.
@@ -97,6 +133,8 @@ export function parseProduct(product, spec) {
   if (spec.maxPrice && product.p > spec.maxPrice) return null; // bulk / catering size — not a shopper comparison
   const sizeM = name.match(SIZE_RE);
   const size = sizeM ? `${sizeM[1]} ${sizeM[2].toLowerCase()}` : null;
+  // Known alias first (canonical spelling + cross-store normalization), else
+  // auto-extract the brand so long-tail brands still become comparison rows.
   let brand = null;
   for (const [alias, canon] of Object.entries(spec.brands)) {
     if (name.includes(alias)) {
@@ -104,6 +142,7 @@ export function parseProduct(product, spec) {
       break;
     }
   }
+  if (!brand) brand = extractBrand(product.n);
   const variant = spec.variants.find((v) => name.includes(v)) || null;
   // Match on BRAND (+ regular/whipped variant). Size is often missing from a
   // store's product names, so we don't require it — we record it when present
@@ -160,7 +199,11 @@ export function computeBrands(catalog, areaStores) {
         const ratio = prices.length > 1 ? Math.max(...prices) / Math.min(...prices) : 1;
         row.sizeWarn = sizes.size > 1 || ratio > 1.8;
       }
-      const rows = [...rowMap.values()].sort((a, b) => a.brand.localeCompare(b.brand) || (a.variant || '').localeCompare(b.variant || ''));
+      // Rows priced at more stores lead (real head-to-heads first), then by brand.
+      const nStores = (r) => Object.keys(r.prices).length;
+      const rows = [...rowMap.values()].sort(
+        (a, b) => nStores(b) - nStores(a) || a.brand.localeCompare(b.brand) || (a.variant || '').localeCompare(b.variant || '')
+      );
       if (rows.length || Object.keys(other).length) out[area][itemId] = { from, rows, other };
     }
   }
