@@ -27,6 +27,7 @@ import {
   areaDeals,
   basketTotals,
   compRows,
+  groupByStore,
   isPackagePriced,
   LIVE_CATEGORIES,
   money,
@@ -332,6 +333,7 @@ export function ListScreen() {
   const { origin, maxMiles } = useLocation();
   const basket = useBasket();
   const [showTripAdd, setShowTripAdd] = useState(false);
+  const [listMode, setListMode] = useState<'one' | 'split'>('one'); // 1-store vs split-by-store
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   // Saved list items + "just this trip" one-offs (deduped). Trip items are
   // priced into the cart but never written to the saved list.
@@ -348,6 +350,10 @@ export function ListScreen() {
   const gotLines = res.lines.filter((l) => basket.isGot(l.cat, l.id));
   const toBuyPriced = toBuy.filter((l) => l.cheapestIdx >= 0);
   const toBuyUnpriced = toBuy.filter((l) => l.cheapestIdx < 0);
+
+  // Split-by-store plan: each item under its cheapest store, with subtotals.
+  const split = groupByStore(res, active);
+  const storeName = (id: string) => KSTORES.find((k) => k.id === id)?.name ?? STORE_ABBR[id] ?? id;
 
   const stepBtn = {
     width: 30,
@@ -370,7 +376,7 @@ export function ListScreen() {
     justifyContent: 'center' as const,
   };
 
-  const renderLine = (ln: (typeof res.lines)[number], got = false) => {
+  const renderLine = (ln: (typeof res.lines)[number], got = false, hideStore = false) => {
     const best = ln.cheapestIdx >= 0 ? ln.prices[ln.cheapestIdx] : null;
     const bestStore = ln.cheapestIdx >= 0 ? STORE_ABBR[active[ln.cheapestIdx]] ?? active[ln.cheapestIdx] : null;
     const isTrip = tripKeys.has(`${ln.cat}:${ln.id}`);
@@ -421,7 +427,7 @@ export function ListScreen() {
           {!got ? (
             <Text style={{ color: t.inkSoft, fontSize: 12.5, marginTop: 2, fontFamily: sansMed }}>
               {best != null
-                ? `${money(best)}${unitSuffix(ln.unit)} at ${bestStore}${ln.qty > 1 ? `  ·  ${ln.qty} = ${money(best * ln.qty)}` : ''}`
+                ? `${money(best)}${unitSuffix(ln.unit)}${hideStore ? '' : ` at ${bestStore}`}${ln.qty > 1 ? `  ·  ${ln.qty} = ${money(best * ln.qty)}` : ''}`
                 : 'Not sold at these stores'}
             </Text>
           ) : null}
@@ -486,6 +492,36 @@ export function ListScreen() {
           </View>
         ) : (
           <View style={{ paddingHorizontal: 18, marginTop: 8 }}>
+            {/* 1-store (easiest) vs split-by-store (cheapest) toggle */}
+            <View
+              style={{
+                flexDirection: 'row',
+                backgroundColor: t.surface,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: t.line,
+                padding: 3,
+                marginBottom: 12,
+              }}
+            >
+              {(['one', 'split'] as const).map((m) => {
+                const on = listMode === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => setListMode(m)}
+                    style={{ flex: 1, paddingVertical: 8, borderRadius: 9, backgroundColor: on ? t.brand : 'transparent', alignItems: 'center' }}
+                  >
+                    <Text style={{ color: on ? '#fff' : t.inkSoft, fontSize: 13, fontFamily: sansBold }}>
+                      {m === 'one' ? '1 store' : 'Split & save'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {listMode === 'one' ? (
+              <>
             {/* Cheapest-cart summary, shopping-forward */}
             {res.cheapest ? (
               <View
@@ -551,6 +587,41 @@ export function ListScreen() {
                 {gotLines.map((ln) => renderLine(ln, true))}
               </>
             ) : null}
+              </>
+            ) : (
+              <>
+                {res.splitSavings > 0.001 ? (
+                  <View style={{ borderRadius: 14, borderWidth: 1, borderColor: t.brand, backgroundColor: t.brandSoft, padding: 14, marginBottom: 6 }}>
+                    <Text style={{ color: t.inkSoft, fontSize: 12, fontFamily: sansSemi, letterSpacing: 0.4 }}>SPLIT ACROSS STORES</Text>
+                    <Text style={{ color: t.ink, fontSize: 14, marginTop: 4, fontFamily: sansMed }}>
+                      Total {money(res.splitTotal)} · save{' '}
+                      <Text style={{ color: t.brand, fontFamily: sansBold }}>{money(res.splitSavings)}</Text> vs one store
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={{ color: t.inkSoft, fontSize: 13, marginBottom: 6, fontFamily: sansMed }}>
+                    Each item at its cheapest nearby store.
+                  </Text>
+                )}
+                {split.groups.map((g) => (
+                  <View key={g.storeId}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 2 }}>
+                      <Text style={{ fontSize: 13.5, color: t.ink, fontFamily: sansBold }}>{storeName(g.storeId)}</Text>
+                      <Text style={{ fontSize: 13.5, color: t.brand, fontFamily: sansBold }}>{money(g.subtotal)}</Text>
+                    </View>
+                    {g.lines.map(({ line }) => renderLine(line, basket.isGot(line.cat, line.id), true))}
+                  </View>
+                ))}
+                {split.unpriced.length ? (
+                  <>
+                    <Text style={{ marginTop: 14, marginBottom: 2, fontSize: 13, color: t.inkFaint, fontFamily: sansSemi }}>
+                      Not sold at your nearby stores
+                    </Text>
+                    {split.unpriced.map((line) => renderLine(line, basket.isGot(line.cat, line.id), true))}
+                  </>
+                ) : null}
+              </>
+            )}
           </View>
         )}
 

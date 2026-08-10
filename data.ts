@@ -170,6 +170,40 @@ export function basketTotals(items: { cat: string; id: string; qty?: number }[],
   return { lines, totals, cheapest, splitTotal, splitSavings, itemCount: lines.length };
 }
 
+export interface StoreGroup {
+  storeId: string;
+  lines: { line: BasketLine; unitPrice: number }[];
+  subtotal: number; // sum(unitPrice * qty) for this store's cheapest items
+}
+
+// Split plan: put each list item under the store that prices it cheapest, with a
+// per-store subtotal. Lines nobody prices come back as `unpriced` so the UI can
+// show them separately instead of dropping them. Powers the List "Split" mode.
+export function groupByStore(result: BasketResult, storeIds: string[]): {
+  groups: StoreGroup[];
+  unpriced: BasketLine[];
+} {
+  const byStore = new Map<string, StoreGroup>();
+  const unpriced: BasketLine[] = [];
+  for (const line of result.lines) {
+    if (line.cheapestIdx < 0) {
+      unpriced.push(line);
+      continue;
+    }
+    const storeId = storeIds[line.cheapestIdx];
+    const unitPrice = line.prices[line.cheapestIdx] as number;
+    let g = byStore.get(storeId);
+    if (!g) {
+      g = { storeId, lines: [], subtotal: 0 };
+      byStore.set(storeId, g);
+    }
+    g.lines.push({ line, unitPrice });
+    g.subtotal += unitPrice * line.qty;
+  }
+  const groups = [...byStore.values()].sort((a, b) => b.subtotal - a.subtotal);
+  return { groups, unpriced };
+}
+
 // Categories that have at least one priced row somewhere — i.e. worth a tab.
 export const LIVE_CATEGORIES = CATEGORIES.filter((c) => rowsFor(c.key).length > 0);
 
