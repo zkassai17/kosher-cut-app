@@ -413,11 +413,13 @@ export function CompareRow({
       { text: 'Report', onPress: () => Alert.alert('Thanks', `We'll re-check ${item}.`) },
     ]);
 
+  const rowPress = onPress ?? (canAdd ? doToggle : undefined);
+
   return (
     <View style={s.cutRow}>
       <Pressable
         style={s.cutLeft}
-        onPress={onPress ?? (canAdd ? doToggle : undefined)}
+        onPress={rowPress}
         onLongPress={reportPrice}
         hitSlop={6}
       >
@@ -443,7 +445,6 @@ export function CompareRow({
             </Animated.View>
           ) : null}
           <Text style={[s.cutName, { flexShrink: 1 }]}>{item}</Text>
-          {chevron ? <Text style={{ color: t.inkFaint, fontSize: 17, marginLeft: 6, marginTop: -1 }}>›</Text> : null}
         </View>
         {caption ? (
           multi && save > 0 ? (
@@ -455,6 +456,25 @@ export function CompareRow({
           )
         ) : null}
       </Pressable>
+      {chevron ? (
+        <Pressable
+          onPress={rowPress}
+          hitSlop={8}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 8,
+            marginRight: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: t.brandSoft,
+            borderWidth: 1,
+            borderColor: t.brand,
+          }}
+        >
+          <Text style={{ color: t.brand, fontSize: 18, fontFamily: sans.bold, marginTop: -2 }}>›</Text>
+        </Pressable>
+      ) : null}
       <View style={s.pillGroup}>
         {storeIds.map((sid, i) => {
           const p = prices[i];
