@@ -14,8 +14,10 @@ export const SIZE_RE = /(\d+(?:\.\d+)?)\s*(oz|lb|ct|pk|gal|qt)\b/i;
 export const SPECS = {
   cream_cheese: {
     maxPrice: 13,
+    core: 'cheese', // must end in "...cream cheese", not "cream cheese frosting/rugelach"
     accept: ['cream cheese'],
-    reject: ['rugelach', 'croissant', 'frosting', 'cake', 'danish', 'babka', 'rilled', 'stuffed', 'sandwich'],
+    reject: ['rugelach', 'croissant', 'frosting', 'cake', 'danish', 'babka', 'rilled', 'stuffed', 'sandwich', 'mac', 'macaroni'],
+    blockBrands: ['Goodles', 'Pillsbury', 'Belgioioso', 'Kraft Mac'],
     brands: {
       philadelphia: 'Philadelphia', philly: 'Philadelphia', 'j&j': 'J&J', 'j & j': 'J&J',
       'temp tee': 'Temp Tee', temptee: 'Temp Tee', 'temp-tee': 'Temp Tee', breakstone: "Breakstone's",
@@ -25,8 +27,12 @@ export const SPECS = {
   },
   sourcream: {
     maxPrice: 10,
+    core: 'cream', // must end in "sour cream", not "sour cream & onion" chips
     accept: ['sour cream'],
-    reject: ['dip', 'coffee cake', 'noodle'],
+    reject: ['dip', 'coffee cake', 'noodle', 'onion', 'chip', 'chips', 'crisps', 'pretzel', 'popcorn', 'cracker', 'ruffle', 'ridge', 'snack', 'flavored', 'seasoning', 'powder'],
+    blockBrands: [
+      "Herr's", 'Herrs', 'Pringles', 'Wise', 'Popchips', 'Kettle', 'Quest', 'Sensible', 'Vita', "Lay's", 'Lays', 'Ruffles', 'Utz', 'Terra', 'Deep', 'Candy', 'Beigel', 'Bissli', 'Bamba',
+    ],
     brands: {
       breakstone: "Breakstone's", friendship: 'Friendship', tuscan: 'Tuscan',
       norman: "Norman's", axelrod: 'Axelrod', daisy: 'Daisy', mehadrin: 'Mehadrin', givat: 'Givat',
@@ -35,8 +41,9 @@ export const SPECS = {
   },
   cottage_cheese: {
     maxPrice: 12,
+    core: 'cheese',
     accept: ['cottage cheese'],
-    reject: ['dip'],
+    reject: ['dip', 'chip', 'snack'],
     brands: {
       breakstone: "Breakstone's", friendship: 'Friendship', axelrod: 'Axelrod',
       norman: "Norman's", mehadrin: 'Mehadrin', 'muller': 'Muller', daisy: 'Daisy',
@@ -45,8 +52,9 @@ export const SPECS = {
   },
   american_cheese: {
     maxPrice: 16,
+    core: 'cheese',
     accept: ['american cheese', 'american slice', 'american singles'],
-    reject: ['sandwich', 'burger'],
+    reject: ['sandwich', 'burger', 'chip', 'snack', 'popcorn'],
     brands: {
       haolam: 'Haolam', "ha'olam": 'Haolam', migdal: 'Migdal', miller: "Miller's",
       norman: "Norman's", "j&j": 'J&J', 'j & j': 'J&J', 'les petites': 'Les Petites', kraft: 'Kraft',
@@ -55,13 +63,16 @@ export const SPECS = {
   },
   yogurt: {
     maxPrice: 12,
+    core: 'yogurt',
     accept: ['yogurt', 'yoghurt'],
-    reject: ['drink', 'smoothie', 'bar', 'covered', 'raisins', 'pretzel'],
+    reject: ['drink', 'smoothie', 'bar', 'bars', 'covered', 'raisins', 'pretzel', 'cereal', 'granola', 'chip', 'snack', 'pouch', 'tube', 'frozen'],
     brands: {
-      chobani: 'Chobani', 'dannon': 'Dannon', norman: "Norman's", "yo crunch": 'YoCrunch',
-      mehadrin: 'Mehadrin', 'la yogurt': 'La Yogurt', fage: 'Fage', 'oikos': 'Oikos', 'stonyfield': 'Stonyfield',
+      chobani: 'Chobani', chobany: 'Chobani', dannon: 'Dannon', norman: "Norman's", 'yo crunch': 'YoCrunch',
+      yocrunch: 'YoCrunch', yocunch: 'YoCrunch', mehadrin: 'Mehadrin', 'la yogurt': 'La Yogurt', fage: 'Fage',
+      oikos: 'Oikos', stonyfield: 'Stonyfield', siggi: "Siggi's", gevina: 'Gevina', givat: 'Givat', yoplait: 'Yoplait', ratio: 'Ratio', oui: 'Oui',
     },
     variants: ['greek', 'nonfat', 'low fat', 'vanilla', 'plain', 'strawberry'],
+    blockBrands: ["Kellogg's", 'Krispy', 'Quaker', 'Silk', 'So Delicious', 'Forager', 'Yasso', 'Harmless', 'Happybaby', 'Happy', 'Fit', 'Nature', "Nature's"],
   },
   milk: {
     maxPrice: 10,
@@ -77,22 +88,25 @@ export const SPECS = {
       'ricotta', 'mozzarella', 'cheese', 'milked', 'silk', 'oatly', 'califia', 'lactose free milk',
     ],
     // Brands that make candy/cheese/non-dairy, never drinking milk.
-    blockBrands: ['Klik', 'Schmerling', "Schmerling's", 'Nestle', 'Elmhurst', 'Galbani', 'Ripple', 'Tofutti', 'Vered', 'Paskesz', 'Nesquik', 'Silk', 'Oatly', 'Califia', 'Cherub'],
+    blockBrands: ['Klik', 'Schmerling', "Schmerling's", 'Nestle', 'Elmhurst', 'Galbani', 'Ripple', 'Tofutti', 'Vered', 'Paskesz', 'Nesquik', 'Silk', 'Oatly', 'Califia', 'Cherub', 'Shoko', 'Jelly', 'Camille', 'Mill', 'Lifeway'],
     brands: {
       tuscan: 'Tuscan', 'golden flow': 'Golden Flow', mehadrin: 'Mehadrin', ahava: 'Ahava',
       'pride of the farm': 'Pride of the Farm', lactaid: 'Lactaid', norman: "Norman's",
+      fairlife: 'Fairlife', 'fa!rlife': 'Fairlife', 'cream-o-land': 'Cream-O-Land', horizon: 'Horizon', stonyfield: 'Stonyfield',
     },
     variants: ['whole', 'skim', '1%', '2%', 'reduced fat', 'lactose free'],
   },
   eggs: {
     maxPrice: 12,
+    core: 'eggs',
     accept: ['eggs'],
-    reject: ['egg roll', 'egg noodle', 'salad', 'substitute', 'whites only', 'liquid'],
+    reject: ['egg roll', 'egg noodle', 'salad', 'substitute', 'whites only', 'liquid', 'chocolate', 'candy', 'cadbury', 'kinder', 'oats', 'oatmeal', 'cereal', 'scotch'],
     brands: {
-      'wilder': 'Wilder', 'eggland': "Eggland's", 'nest fresh': 'NestFresh',
-      'gold hen': 'Gold Hen', mehadrin: 'Mehadrin',
+      wilder: 'Wilder', eggland: "Eggland's", 'egg-land': "Eggland's", 'egg land': "Eggland's", 'nest fresh': 'NestFresh',
+      'gold hen': 'Gold Hen', mehadrin: 'Mehadrin', alderfer: 'Alderfer', mitlitsky: 'Mitlitsky', weinstock: 'Weinstock', "puglisi": "Puglisi's",
     },
     variants: ['large', 'extra large', 'jumbo', 'organic', 'brown', 'cage free'],
+    blockBrands: ['Kinder', 'Quaker', 'Cadbury', 'Grade', 'Dozen', 'Round', 'Run', 'Ace', 'Pine', 'Robert', 'Elevated', 'Happy', 'Clinton', 'Dutch', 'Anatolia', 'Etopihen'],
   },
 };
 
@@ -106,6 +120,8 @@ const TAIL_STRIP = new Set([
   'whole', 'skim', 'lowfat', 'low', 'fat', 'reduced', 'fatfree', 'lactose', 'free', 'half', 'gallon', 'gal', 'quart', 'qt',
   'oz', 'fl', 'pt', 'pint', 'pasteurized', 'organic', 'vitamin', 'd', 'a', 'of', 'the', 'container', 'carton', 'jug', 'bottle',
   'plus', 'ultra', 'filtered', 'grass', 'fed', 'natural', 'kosher', 'chalav', 'yisroel', 'cholov', '1', '2', '',
+  // trailing variant/descriptor words, so "Cream Cheese Whipped" still ends at "cheese"
+  'whipped', 'parve', 'pareve', 'light', 'lite', 'regular', 'original', 'plain', 'spread', 'soft', 'block', 'tub', 'salted', 'unsalted', 'imported', 'sliced', 'slice',
 ]);
 function coreNounIs(name, core) {
   let w = norm(name)
@@ -126,6 +142,7 @@ const STOP = new Set([
   'organic', 'plain', 'greek', 'original', 'natural', 'fresh', 'kosher', 'pasteurized', 'imitation', 'free', 'gluten', 'the', 'of', 'and', 'with', 'in',
   'extra', 'mini', 'kids', 'kid', 'family', 'value', 'style', 'classic', 'simply', 'farm', 'farms', 'pack', 'count', 'large', 'small', 'curd', 'white', 'yellow',
   'chalav', 'yisroel', 'cholov', 'vanilla', 'strawberry', 'coffee', 'berry', 'blueberry', 'peach', 'banana', 'chocolate', 'flavored', 'chive', 'chives', 'onion', 'scallion',
+  'grade', 'dozen', 'aa', 'count', 'ct', 'jumbo', 'medium', 'brown', 'cage', 'omega', 'sale',
 ]);
 
 // Multi-word brands to keep intact (checked as a phrase before single-token fallback).
@@ -147,8 +164,10 @@ function extractBrand(rawName) {
   for (const w of rawName.replace(/[,]/g, ' ').split(/\s+/)) {
     const lw = w.toLowerCase().replace(/[^a-z0-9%&']/g, '');
     if (!lw) continue;
-    if (STOP.has(lw) || /\d/.test(lw) || lw.length === 1) return null; // starts generic → unbranded
-    return GLOBAL_ALIASES[lw] || TITLE(w.replace(/[.,]/g, '')); // first real token is the brand
+    if (STOP.has(lw) || /\d/.test(lw)) return null; // starts generic → unbranded
+    if (GLOBAL_ALIASES[lw]) return GLOBAL_ALIASES[lw];
+    if (lw.length < 3) return null; // 2-letter fragment ("Yo", "La", "Ga") — not a real brand
+    return TITLE(w.replace(/[.,]/g, '')); // first real token is the brand
   }
   return null;
 }
