@@ -17,11 +17,11 @@ test('rejects junk (rugelach is not cream cheese)', () => {
   assert.equal(r, null);
 });
 
-test('known brand without a size is not confident', () => {
+test('known brand without a size is still confident (brand-only match)', () => {
   const r = parseProduct({ n: 'Philadelphia Cream Cheese', p: 5.0 }, CC);
   assert.equal(r.brand, 'Philadelphia');
   assert.equal(r.size, null);
-  assert.equal(r.confident, false);
+  assert.equal(r.confident, true); // size optional — matched on brand
 });
 
 test('unknown brand → not confident (goes to other bucket)', () => {
@@ -40,20 +40,37 @@ test('computeBrands groups same brand+size across stores; from-price; other buck
   };
   const out = computeBrands(catalog, { fivetowns: ['gourmetglatt', 'seasons_law'] });
   const cc = out.fivetowns.cream_cheese;
-  const row = cc.rows.find((r) => r.brand === 'Philadelphia' && r.size === '8 oz');
+  const row = cc.rows.find((r) => r.brand === 'Philadelphia');
   assert.equal(row.prices.gourmetglatt, 5.59);
   assert.equal(row.prices.seasons_law, 4.99);
+  assert.equal(row.sizes.gourmetglatt, '8 oz');
   assert.equal(cc.from.seasons_law, 4.99);
   assert.equal(cc.from.gourmetglatt, 5.59);
   assert.ok(cc.other.gourmetglatt.some((o) => o.name.includes('Store Brand')));
 });
 
-test('does not match a different size as the same row', () => {
+test('same brand+variant across stores is ONE row, recording each size for the UI to flag', () => {
   const catalog = {
     a: [{ n: 'Temp Tee Cream Cheese 8 oz', p: 6.19 }],
     b: [{ n: 'Temp Tee Cream Cheese 11.5 oz', p: 7.99 }],
   };
   const out = computeBrands(catalog, { z: ['a', 'b'] });
   const rows = out.z.cream_cheese.rows.filter((r) => r.brand === 'Temp Tee');
-  assert.equal(rows.length, 2); // 8 oz and 11.5 oz are separate rows, not a false match
+  assert.equal(rows.length, 1); // brand-matched into one comparable row
+  assert.equal(rows[0].prices.a, 6.19);
+  assert.equal(rows[0].prices.b, 7.99);
+  assert.equal(rows[0].sizes.a, '8 oz'); // sizes kept so UI can show "sizes may vary"
+  assert.equal(rows[0].sizes.b, '11.5 oz');
+});
+
+test('brand match works when one store omits the size (the real GG case)', () => {
+  const catalog = {
+    seasons_law: [{ n: 'J&J Whipped Cream Cheese 8 oz', p: 5.99 }],
+    gourmetglatt: [{ n: 'J&J Whipped Cream Cheese', p: 5.49 }], // no size in name
+  };
+  const out = computeBrands(catalog, { fivetowns: ['seasons_law', 'gourmetglatt'] });
+  const row = out.fivetowns.cream_cheese.rows.find((r) => r.brand === 'J&J' && r.variant === 'whipped');
+  assert.equal(row.prices.seasons_law, 5.99);
+  assert.equal(row.prices.gourmetglatt, 5.49); // both stores present — the whole point
+  assert.equal(row.sizes.gourmetglatt, null);
 });

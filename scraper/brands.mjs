@@ -13,6 +13,7 @@ export const SIZE_RE = /(\d+(?:\.\d+)?)\s*(oz|lb|ct|pk|gal|qt)\b/i;
 // variant tags that are part of a product's identity (regular ≠ whipped).
 export const SPECS = {
   cream_cheese: {
+    maxPrice: 13,
     accept: ['cream cheese'],
     reject: ['rugelach', 'croissant', 'frosting', 'cake', 'danish', 'babka', 'rilled', 'stuffed', 'sandwich'],
     brands: {
@@ -23,6 +24,7 @@ export const SPECS = {
     variants: ['whipped', 'parve', 'reduced fat', 'light', 'chives', 'onion', 'scallion'],
   },
   sourcream: {
+    maxPrice: 10,
     accept: ['sour cream'],
     reject: ['dip', 'coffee cake', 'noodle'],
     brands: {
@@ -32,6 +34,7 @@ export const SPECS = {
     variants: ['light', 'reduced fat', 'nonfat', 'low fat'],
   },
   cottage_cheese: {
+    maxPrice: 12,
     accept: ['cottage cheese'],
     reject: ['dip'],
     brands: {
@@ -41,6 +44,7 @@ export const SPECS = {
     variants: ['low fat', 'nonfat', 'whipped', 'small curd', 'pineapple'],
   },
   american_cheese: {
+    maxPrice: 16,
     accept: ['american cheese', 'american slice', 'american singles'],
     reject: ['sandwich', 'burger'],
     brands: {
@@ -50,6 +54,7 @@ export const SPECS = {
     variants: ['white', 'yellow', 'low fat', 'nonfat'],
   },
   yogurt: {
+    maxPrice: 12,
     accept: ['yogurt', 'yoghurt'],
     reject: ['drink', 'smoothie', 'bar', 'covered', 'raisins', 'pretzel'],
     brands: {
@@ -59,6 +64,7 @@ export const SPECS = {
     variants: ['greek', 'nonfat', 'low fat', 'vanilla', 'plain', 'strawberry'],
   },
   milk: {
+    maxPrice: 10,
     accept: ['milk'],
     reject: ['chocolate milk', 'coconut', 'almond', 'oat', 'soy', 'condensed', 'evaporated', 'powder', 'shake'],
     brands: {
@@ -68,6 +74,7 @@ export const SPECS = {
     variants: ['whole', 'skim', '1%', '2%', 'reduced fat', 'lactose free'],
   },
   eggs: {
+    maxPrice: 12,
     accept: ['eggs'],
     reject: ['egg roll', 'egg noodle', 'salad', 'substitute', 'whites only', 'liquid'],
     brands: {
@@ -87,6 +94,7 @@ export function parseProduct(product, spec) {
   const name = norm(product.n);
   if (!spec.accept.some((a) => name.includes(a))) return null;
   if (spec.reject.some((r) => name.includes(r))) return null; // junk / wrong product
+  if (spec.maxPrice && product.p > spec.maxPrice) return null; // bulk / catering size — not a shopper comparison
   const sizeM = name.match(SIZE_RE);
   const size = sizeM ? `${sizeM[1]} ${sizeM[2].toLowerCase()}` : null;
   let brand = null;
@@ -97,7 +105,10 @@ export function parseProduct(product, spec) {
     }
   }
   const variant = spec.variants.find((v) => name.includes(v)) || null;
-  const confident = !!(brand && size); // matched only when brand AND size are known
+  // Match on BRAND (+ regular/whipped variant). Size is often missing from a
+  // store's product names, so we don't require it — we record it when present
+  // and the UI flags when two stores' sizes differ. Unknown brand → not matched.
+  const confident = !!brand;
   return { brand, size, variant, price: product.p, name: product.n, confident };
 }
 
@@ -120,14 +131,18 @@ export function computeBrands(catalog, areaStores) {
             (other[storeId] ||= []).push({ name: p.name, price: p.price });
             continue;
           }
-          const key = `${p.brand}|${p.size}|${p.variant || ''}`;
+          const key = `${p.brand}|${p.variant || ''}`;
           let row = rowMap.get(key);
           if (!row) {
-            row = { brand: p.brand, size: p.size, variant: p.variant, prices: {} };
+            row = { brand: p.brand, variant: p.variant, prices: {}, sizes: {} };
             rowMap.set(key, row);
           }
-          // keep the cheapest instance of this exact product at this store
-          if (row.prices[storeId] == null || p.price < row.prices[storeId]) row.prices[storeId] = p.price;
+          // keep the cheapest instance of this brand+variant at this store, and
+          // remember that instance's size (may be null) so the UI can show it.
+          if (row.prices[storeId] == null || p.price < row.prices[storeId]) {
+            row.prices[storeId] = p.price;
+            row.sizes[storeId] = p.size;
+          }
           if (from[storeId] == null || p.price < from[storeId]) from[storeId] = p.price;
         }
       }
@@ -135,7 +150,17 @@ export function computeBrands(catalog, areaStores) {
       for (const sid of Object.keys(other)) {
         other[sid] = other[sid].sort((a, b) => a.price - b.price).slice(0, 8);
       }
-      const rows = [...rowMap.values()].sort((a, b) => a.brand.localeCompare(b.brand) || (a.size || '').localeCompare(b.size || ''));
+      // Flag a row where a straight price comparison could mislead: two stores
+      // list different known sizes, or their prices diverge enough (>1.8x) to
+      // smell like a size difference. The app shows a "sizes differ" note and
+      // does not crown a cheaper winner on these.
+      for (const row of rowMap.values()) {
+        const sizes = new Set(Object.values(row.sizes).filter(Boolean));
+        const prices = Object.values(row.prices);
+        const ratio = prices.length > 1 ? Math.max(...prices) / Math.min(...prices) : 1;
+        row.sizeWarn = sizes.size > 1 || ratio > 1.8;
+      }
+      const rows = [...rowMap.values()].sort((a, b) => a.brand.localeCompare(b.brand) || (a.variant || '').localeCompare(b.variant || ''));
       if (rows.length || Object.keys(other).length) out[area][itemId] = { from, rows, other };
     }
   }
