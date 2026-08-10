@@ -67,13 +67,17 @@ export const SPECS = {
     maxPrice: 10,
     core: 'milk', // must actually END in "milk" — not "milk chocolate" / "whole milk yogurt"
     accept: ['milk'],
-    // "milk" shows up in candy ("milk chocolate"), snacks, soap, creamers, etc.
-    // Keep only drinking milk: reject anything that smells like not-a-carton.
+    // "milk" shows up in candy ("Klik Creamy Milk"), flavored drinks, nut milks,
+    // cheese ("whole milk ricotta"), soap, creamers. Keep only drinking cow's milk.
     reject: [
       'chocolate', 'cocoa', 'candy', 'bar', 'wafer', 'chip', 'soap', 'honey', 'cereal', 'cookie', 'snack', 'treat',
-      'powder', 'shake', 'milky', 'buttermilk', 'coconut', 'almond', 'oat', 'soy', 'rice', 'cashew', 'goat',
-      'condensed', 'evaporated', 'creamer', 'coffee', 'ice cream', 'pudding', 'formula', 'spread', 'straw', 'magic', 'drink',
+      'powder', 'shake', 'milky', 'buttermilk', 'coconut', 'almond', 'oat', 'soy', 'rice', 'cashew', 'walnut', 'pistachio', 'nut', 'goat',
+      'condensed', 'evaporated', 'creamer', 'creamy', 'coffee', 'ice cream', 'pudding', 'formula', 'spread', 'straw', 'magic', 'drink',
+      'nesquik', 'strawberry', 'vanilla', 'minor', 'stick', 'biscuit', 'cornflake', 'kariot', 'crisp', 'coated', 'pillow', 'lait', 'split', 'swiss',
+      'ricotta', 'mozzarella', 'cheese', 'milked', 'silk', 'oatly', 'califia', 'lactose free milk',
     ],
+    // Brands that make candy/cheese/non-dairy, never drinking milk.
+    blockBrands: ['Klik', 'Schmerling', "Schmerling's", 'Nestle', 'Elmhurst', 'Galbani', 'Ripple', 'Tofutti', 'Vered', 'Paskesz', 'Nesquik', 'Silk', 'Oatly', 'Califia', 'Cherub'],
     brands: {
       tuscan: 'Tuscan', 'golden flow': 'Golden Flow', mehadrin: 'Mehadrin', ahava: 'Ahava',
       'pride of the farm': 'Pride of the Farm', lactaid: 'Lactaid', norman: "Norman's",
@@ -170,6 +174,7 @@ export function parseProduct(product, spec) {
     }
   }
   if (!brand) brand = extractBrand(product.n);
+  if (brand && spec.blockBrands && spec.blockBrands.some((b) => b.toLowerCase() === brand.toLowerCase())) return null; // non-milk brand
   const variant = spec.variants.find((v) => name.includes(v)) || null;
   // Match on BRAND (+ regular/whipped variant). Size is often missing from a
   // store's product names, so we don't require it — we record it when present
