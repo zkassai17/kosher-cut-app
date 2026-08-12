@@ -136,7 +136,10 @@ export function PricesScreen() {
         {blocks.map((b) => {
           // With 2+ stores, lead with real head-to-heads; tuck items only one store
           // carries into a quiet "Only at one store" group (no wall of dashes).
-          const priced = (r: (typeof b.rows)[number]) => r.prices.filter((p) => p != null).length;
+          // Count brand "from" prices too, so a store priced only via brands (e.g.
+          // Nutmeg) is classified the same way it's displayed.
+          const priced = (r: (typeof b.rows)[number]) =>
+            b.ids.filter((sid, i) => (brandFromPrice(origin.areaId ?? '', r.id, sid) ?? r.prices[i]) != null).length;
           const split = b.ids.length >= 2;
           const cmp = split ? b.rows.filter((r) => priced(r) >= 2) : b.rows;
           const solo = split ? b.rows.filter((r) => priced(r) < 2) : [];

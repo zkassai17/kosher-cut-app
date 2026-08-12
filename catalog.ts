@@ -80,6 +80,13 @@ export function brandFromPrice(area: string, itemId: string, storeId: string): n
   return typeof v === 'number' ? v : undefined;
 }
 
+// Does the daily feed have curated prices for this store + category? Lets stores
+// that aren't in the hand-typed table (e.g. Nutmeg) still appear where they have
+// real scraped data.
+export function curatedHasCategory(storeId: string, cat: string): boolean {
+  return Object.keys(CURATED[storeId]?.[cat] ?? {}).length > 0;
+}
+
 export const hasCatalog = (storeId: string): boolean => (CATALOG[storeId]?.length ?? 0) > 0;
 
 export const catalogSize = (storeId: string): number => CATALOG[storeId]?.length ?? 0;

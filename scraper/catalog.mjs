@@ -27,7 +27,7 @@ const AREA_STORES = {
   teaneck: ['ge', 'gl'],
   fivetowns: ['gourmetglatt', 'seasons_law'],
   manhattan: ['six60one', 'kmp'],
-  lakewood: ['superstop'],
+  lakewood: ['superstop', 'nutmeg'],
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,6 +40,7 @@ const STD_DEPTS = [10387, 10395, 10705, 10438, 10364, 10379, 10612, 10450, 10384
 const HB_STORES = [
   { id: 'ge', name: 'Grand & Essex', origin: 'https://shop.grandandessex.com', region: 'New-Jersey' },
   { id: 'superstop', name: 'SuperStop', origin: 'https://superstopnj.com', region: 'Lakewood' },
+  { id: 'nutmeg', name: 'Nutmeg Kosher', origin: 'https://nutmegkoshermarket.com', region: 'Lakewood-NJ' },
   { id: 'seasons_law', name: 'Seasons (Lawrence)', origin: 'https://seasonskosher.com', region: 'Lawrence', seedDepts: STD_DEPTS },
   { id: 'six60one', name: '661', origin: 'https://six60one.com', region: 'New-York-City' },
 ];

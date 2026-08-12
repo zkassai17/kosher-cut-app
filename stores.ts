@@ -53,6 +53,7 @@ export const KSTORES: KStore[] = [
 
   // Lakewood, NJ
   { id: 'superstop', name: 'SuperStop', city: 'Lakewood, NJ', areaId: 'lakewood', lat: 40.083, lng: -74.209, status: 'online' },
+  { id: 'nutmeg', name: 'Nutmeg Kosher', city: 'Lakewood, NJ', address: '485 Locust St', areaId: 'lakewood', lat: 40.073, lng: -74.193, status: 'live' },
 ];
 
 export interface Origin {

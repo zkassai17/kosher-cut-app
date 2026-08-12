@@ -4,7 +4,7 @@
 
 import { CATEGORIES, isPackagePriced, itemMeta, money, priceOf, PRICES, Unit, unitSuffix } from './prices';
 
-import { brandsFor, catalogIsLb, catalogPriceOf, curatedPriceOf } from './catalog';
+import { brandsFor, catalogIsLb, catalogPriceOf, curatedHasCategory, curatedPriceOf } from './catalog';
 
 // Live curated price: the daily feed's VERIFIED value if present, else the bundled
 // hand-typed table (offline fallback). Keeps the category tabs fresh automatically
@@ -58,15 +58,18 @@ export const STORE_ABBR: Record<string, string> = {
   seasons_law: 'Seasons',
   six60one: '661',
   kmp: 'KMP',
+  nutmeg: 'Nutmeg',
 };
 
 export const storeHasData = (storeId: string): boolean =>
-  !!PRICES[storeId] && CATEGORIES.some((c) => Object.keys(PRICES[storeId][c.key] ?? {}).length > 0);
+  CATEGORIES.some((c) => storeHasCategoryData(storeId, c.key));
 
 // Does this store list anything in a specific category? (so a store only shows
 // on the tabs it actually has prices for — e.g. KMP appears in Dairy and Meat.)
+// Counts BOTH the hand-typed table and the daily curated feed, so scraped-only
+// stores like Nutmeg appear where they have real data.
 export const storeHasCategoryData = (storeId: string, catKey: string): boolean =>
-  Object.keys(PRICES[storeId]?.[catKey] ?? {}).length > 0;
+  Object.keys(PRICES[storeId]?.[catKey] ?? {}).length > 0 || curatedHasCategory(storeId, catKey);
 
 export interface CompItem {
   item: string;
