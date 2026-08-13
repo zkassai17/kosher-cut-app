@@ -3,7 +3,7 @@
 // by design: if a target can't be measured, the tip still shows centered — it
 // never looks broken. Seen-state is per tab in AsyncStorage.
 
-import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Dimensions, LayoutRectangle, Pressable, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -89,23 +89,32 @@ export function CoachProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<CoachTab | null>(null);
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<LayoutRectangle | null>(null);
+  // Tracks the tour that's active (or already ran this session) via a ref, so the
+  // re-entry guard never resets a tour mid-way when the provider re-renders.
+  const activeRef = useRef<Set<CoachTab>>(new Set());
+  const showingRef = useRef(false);
 
-  const register = (t: CoachTab, id: string, ref: React.RefObject<View | null>) => {
+  const register = useCallback((t: CoachTab, id: string, ref: React.RefObject<View | null>) => {
     (refs.current[t] ||= {})[id] = ref;
-  };
+  }, []);
 
-  const startIfUnseen = async (t: CoachTab) => {
+  // Stable reference (empty deps) — otherwise every render would re-fire the
+  // per-tab trigger effect and reset the tour to step 0.
+  const startIfUnseen = useCallback(async (t: CoachTab) => {
     try {
+      if (showingRef.current || activeRef.current.has(t)) return; // a tour is up, or this one already ran
       if (await AsyncStorage.getItem(DISABLE_KEY)) return;
       if (!(await AsyncStorage.getItem('kc.onboarded.v1'))) return; // wait until the welcome intro is dismissed
       if (await AsyncStorage.getItem(SEEN_KEY(t))) return;
       if (!TOURS[t]?.length) return;
+      activeRef.current.add(t);
+      showingRef.current = true;
       setStep(0);
       setTab(t);
     } catch {
       /* ignore */
     }
-  };
+  }, []);
 
   // Measure the current step's target so the spotlight can sit on it. Small delay
   // lets layout settle; a missing/unmounted target just falls back to centered.
@@ -137,6 +146,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         /* ignore */
       }
     }
+    showingRef.current = false; // allow the next tab's tour to start
     setTab(null);
     setStep(0);
     setRect(null);
