@@ -27,6 +27,7 @@ import { BasketProvider } from './basket';
 import { DataProvider } from './datactx';
 import { Onboarding, SignInModal } from './components';
 import { AccountScreen, ListScreen, PricesScreen, StoresScreen } from './screens';
+import { CoachProvider } from './coachmarks';
 
 const Tab = createBottomTabNavigator();
 
@@ -120,7 +121,9 @@ export default function App() {
             <LocationProvider>
               <ProfileProvider>
                 <BasketProvider>
-                  <Gate />
+                  <CoachProvider>
+                    <Gate />
+                  </CoachProvider>
                 </BasketProvider>
               </ProfileProvider>
             </LocationProvider>

@@ -41,6 +41,8 @@ import { useData } from './datactx';
 import { decodeList, shareText } from './share';
 import { BrandItem, brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
+import { useIsFocused } from '@react-navigation/native';
+import { CoachTarget, useTabCoach } from './coachmarks';
 import { sans } from './theme';
 
 const sansBold = sans.bold;
@@ -57,6 +59,7 @@ export function PricesScreen() {
   const [showDeals, setShowDeals] = useState(false);
   const [brandDetail, setBrandDetail] = useState<{ item: BrandItem; storeIds: string[]; title: string; subtitle: string } | null>(null);
   const query = q.trim().toLowerCase();
+  useTabCoach('prices', useIsFocused());
 
   // Stores in the picked area that actually list a given category.
   const storesFor = (catKey: string) =>
@@ -107,11 +110,13 @@ export function PricesScreen() {
     <View style={s.root}>
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 36, paddingTop: 4 }}>
-        <SearchBar value={q} onChange={setQ} />
+        <CoachTarget tab="prices" id="search">
+          <SearchBar value={q} onChange={setQ} />
+        </CoachTarget>
         <Text style={[s.listHint, { marginBottom: 2 }]}>Prices updated {updatedAt} · always confirm in-store</Text>
 
         {!query ? (
-          <View style={{ marginTop: 4 }}>
+          <CoachTarget tab="prices" id="cats" style={{ marginTop: 4 }}>
             <PillTabs
               value={cat}
               onChange={setCat}
@@ -130,7 +135,7 @@ export function PricesScreen() {
                 </Pressable>
               }
             />
-          </View>
+          </CoachTarget>
         ) : null}
 
         {blocks.map((b) => {
@@ -354,15 +359,16 @@ export function StoresScreen() {
   const { s } = useUI();
   const { origin, maxMiles } = useLocation();
   useData(); // re-render when the daily feed lands so the weekly-ad date updates
+  useTabCoach('stores', useIsFocused());
   const nearby = storesNear(origin, maxMiles);
 
   return (
     <View style={s.root}>
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
-        <View style={{ paddingHorizontal: 18, paddingTop: 6 }}>
+        <CoachTarget tab="stores" id="stores" style={{ paddingHorizontal: 18, paddingTop: 6 }}>
           <Text style={s.h1clean}>Stores near you</Text>
-        </View>
+        </CoachTarget>
         <Text style={s.listHint}>
           {nearby.length} within {maxMiles} mi of {origin.label}
         </Text>
@@ -387,6 +393,7 @@ export function ListScreen() {
   const basket = useBasket();
   const [showTripAdd, setShowTripAdd] = useState(false);
   const [listMode, setListMode] = useState<'one' | 'split'>('one'); // 1-store vs split-by-store
+  useTabCoach('list', useIsFocused());
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   // Saved list items + "just this trip" one-offs (deduped). Trip items are
   // priced into the cart but never written to the saved list.
@@ -525,7 +532,7 @@ export function ListScreen() {
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* One control row: mode toggle (compact) + list picker + share. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 2 }}>
+        <CoachTarget tab="list" id="toggle" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 2 }}>
           {!empty ? (
             <View
               style={{
@@ -560,7 +567,7 @@ export function ListScreen() {
           <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
             <Text style={{ fontSize: 16, color: t.brand, marginTop: -1 }}>↗</Text>
           </Pressable>
-        </View>
+        </CoachTarget>
 
         {/* Area · stores caption. */}
         <Text numberOfLines={1} style={{ color: t.inkSoft, fontSize: 12.5, fontFamily: sansMed, paddingHorizontal: 18, paddingTop: 5, paddingBottom: 2 }}>
@@ -581,7 +588,9 @@ export function ListScreen() {
               <>
             {/* Cheapest-cart summary, shopping-forward */}
             {res.cheapest ? (
-              <View
+              <CoachTarget
+                tab="list"
+                id="cheapest"
                 style={{
                   borderRadius: 14,
                   borderWidth: 1,
@@ -614,7 +623,7 @@ export function ListScreen() {
                 <Text style={{ color: t.inkFaint, fontSize: 11.5, marginTop: 8, fontFamily: sansMed }}>
                   Estimate from the latest prices — confirm in-store.
                 </Text>
-              </View>
+              </CoachTarget>
             ) : null}
 
             {/* Progress: what's left to buy */}
@@ -723,6 +732,7 @@ export function AccountScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  useTabCoach('account', useIsFocused());
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
 
@@ -862,7 +872,7 @@ export function AccountScreen() {
 
         {/* Lists */}
         <Text style={s.listHint}>YOUR LISTS</Text>
-        <View style={{ paddingHorizontal: 18, gap: 10 }}>
+        <CoachTarget tab="account" id="lists" style={{ paddingHorizontal: 18, gap: 10 }}>
           {basket.lists.map((l) => {
             const cheapest = listRes.get(l.id)?.cheapest ?? null;
             const nItems = `${l.items.length} ${l.items.length === 1 ? 'item' : 'items'}`;
@@ -905,7 +915,7 @@ export function AccountScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </CoachTarget>
         <Pressable onPress={() => setShowCreate(true)} style={{ alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 10, marginTop: 2 }}>
           <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>+ New list</Text>
         </Pressable>
