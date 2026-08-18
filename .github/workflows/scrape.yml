@@ -56,3 +56,31 @@ jobs:
           # commits), then push — so a concurrent push never rejects the daily data.
           git pull --rebase origin main
           git push
+
+      # If ANY step above failed (crawl crash, push rejected, etc.) email an alert
+      # so a silent failure can't freeze prices for days again. Uses Gmail SMTP with
+      # an app password stored as repo secrets (never in the file). If the two
+      # secrets aren't set the step is skipped — the run still fails visibly on GitHub.
+      - name: Email alert on failure
+        if: ${{ failure() && env.ALERT_USER != '' }}
+        env:
+          ALERT_USER: ${{ secrets.ALERT_GMAIL_USER }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.ALERT_GMAIL_USER }}
+          password: ${{ secrets.ALERT_GMAIL_APP_PASSWORD }}
+          from: koshercart bot <${{ secrets.ALERT_GMAIL_USER }}>
+          to: koshercartapp@gmail.com
+          subject: "⚠️ koshercart price refresh FAILED — prices are NOT updating"
+          body: |
+            The daily price refresh workflow failed, so the app's prices will stay
+            frozen until this is fixed.
+
+            Run log:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Date (UTC): ${{ github.event.repository.updated_at }}
+            Triggered by: ${{ github.event_name }}
