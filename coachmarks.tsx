@@ -26,7 +26,7 @@ const TOURS: Record<CoachTab, Step[]> = {
     {
       id: 'cats',
       title: 'Compare by category',
-      text: 'Chicken, Beef, or Dairy. Tap a dairy item or hot dogs to compare brands, and hit Deals for today’s biggest savings.',
+      text: 'Chicken, Beef, Dairy, or Pantry. Tap a dairy item or hot dogs to compare brands, and hit Deals for today’s biggest savings.',
     },
   ],
   list: [
