@@ -36,16 +36,25 @@ export function decodeList(text: string): SharedList | null {
   }
 }
 
+// Where friends without the app can get it. Swap in the App Store / Play links
+// at launch — the invite line drives installs.
+export const APP_URL = 'https://zkassai17.github.io/kosher-cut-app/';
+
 // The message that gets shared (iMessage/WhatsApp/email) — a clean, readable
-// shopping list anyone can follow, led by which store to go to.
+// shopping list anyone can follow, led by which store to go to. When `code` is
+// provided (an encodeList payload), friends who already have koshercart can
+// import it; everyone else gets a link to get the app.
 export function shareText(opts: {
   label: string;
   emoji: string;
   storeLine?: string; // e.g. "Cheapest at Grand & Essex — about $38.75"
   itemLabels: string[];
+  code?: string; // encodeList(...) payload, so the app can import the list
 }): string {
-  const { label, emoji, storeLine, itemLabels } = opts;
+  const { label, emoji, storeLine, itemLabels, code } = opts;
   const lines = itemLabels.length ? itemLabels.map((n) => `• ${n}`).join('\n') : '(no items yet)';
   const store = storeLine ? `🏪 ${storeLine}\n\n` : '';
-  return `${emoji} ${label} — shopping list\n\n${store}${lines}\n\nShared from koshercart`;
+  const invite = `\n\n📲 Sent with koshercart — compare kosher grocery prices near you.\nGet the app: ${APP_URL}`;
+  const importCode = code ? `\n\n— have koshercart? open it → Import a list → paste this —\n${code}` : '';
+  return `${emoji} ${label} — shopping list\n\n${store}${lines}${invite}${importCode}`;
 }

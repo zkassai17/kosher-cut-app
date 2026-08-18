@@ -39,7 +39,7 @@ import {
   unitSuffix,
 } from './data';
 import { useData } from './datactx';
-import { decodeList, shareText } from './share';
+import { decodeList, encodeList, shareText } from './share';
 import { BrandItem, brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
 import { useIsFocused } from '@react-navigation/native';
@@ -534,8 +534,10 @@ export function ListScreen() {
         emoji: basket.active.emoji,
         storeLine,
         itemLabels: res.lines.map((l) => (l.qty > 1 ? `${cleanName(l.label)} ×${l.qty}` : cleanName(l.label))),
+        code: encodeList({ label: basket.active.label, emoji: basket.active.emoji, items: basket.items }),
       }),
     });
+    track('list_share', { list: basket.active.id, where: 'list' });
   };
 
   return (
@@ -743,6 +745,7 @@ export function AccountScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   useTabCoach('account', useIsFocused());
   const active = areaStoreIds(origin, maxMiles).filter(storeHasData).slice(0, 3);
   const regRes = basketTotals(basket.regulars, active); // per-regular cheapest-store pricing
@@ -766,6 +769,24 @@ export function AccountScreen() {
     basket.setActive(id);
     track('list_open', { list: id });
     setShowEditor(true);
+  };
+
+  // Send a list to a friend — readable items + an import code (they can pull it
+  // straight into the app) + an invite link for anyone who doesn't have koshercart.
+  const shareListById = (l: (typeof basket.lists)[number]) => {
+    const r = listRes.get(l.id);
+    const c = r?.cheapest ?? null;
+    const storeLine = c ? `Cheapest at ${KSTORES.find((k) => k.id === c.storeId)?.name ?? c.storeId} — about ${money(c.total)}` : undefined;
+    Share.share({
+      message: shareText({
+        label: l.label,
+        emoji: l.emoji,
+        storeLine,
+        itemLabels: (r?.lines ?? []).map((ln) => (ln.qty > 1 ? `${cleanName(ln.label)} ×${ln.qty}` : cleanName(ln.label))),
+        code: encodeList({ label: l.label, emoji: l.emoji, items: l.items }),
+      }),
+    });
+    track('list_share', { list: l.id, where: 'account' });
   };
 
   return (
@@ -922,14 +943,27 @@ export function AccountScreen() {
                     )}
                   </Text>
                 </View>
+                <Pressable
+                  onPress={() => shareListById(l)}
+                  hitSlop={8}
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.brandSoft, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Ionicons name="paper-plane-outline" size={17} color={t.brand} style={{ marginLeft: -1 }} />
+                </Pressable>
                 <Text style={{ color: t.inkFaint, fontSize: 24, fontFamily: sansMed }}>›</Text>
               </Pressable>
             );
           })}
         </CoachTarget>
-        <Pressable onPress={() => setShowCreate(true)} style={{ alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 10, marginTop: 2 }}>
-          <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>+ New list</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 18, marginTop: 2 }}>
+          <Pressable onPress={() => setShowCreate(true)} hitSlop={8} style={{ paddingVertical: 10 }}>
+            <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>+ New list</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowImport(true)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 10 }}>
+            <Ionicons name="download-outline" size={15} color={t.brand} />
+            <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>Import a list</Text>
+          </Pressable>
+        </View>
 
         {configured && user ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 26, paddingHorizontal: 34 }}>
@@ -957,6 +991,7 @@ export function AccountScreen() {
       />
       <AddItemsModal visible={showRegAdd} onClose={() => setShowRegAdd(false)} storeIds={active} regular />
       <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)} />
+      <ImportListModal visible={showImport} onClose={() => setShowImport(false)} />
     </View>
   );
 }
