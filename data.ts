@@ -71,6 +71,26 @@ export const storeHasData = (storeId: string): boolean =>
 export const storeHasCategoryData = (storeId: string, catKey: string): boolean =>
   Object.keys(PRICES[storeId]?.[catKey] ?? {}).length > 0 || curatedHasCategory(storeId, catKey);
 
+// Price a user's pinned preview items at one store (curated-aware). Same items
+// across every Store card → quick apples-to-apples comparison.
+export interface PreviewRow {
+  cat: string;
+  catLabel: string;
+  itemLabel: string;
+  price: number | null;
+  unit: Unit;
+}
+export function previewRows(storeId: string, picks: { cat: string; id: string }[]): PreviewRow[] {
+  return picks
+    .map(({ cat, id }) => {
+      const meta = itemMeta(cat, id);
+      if (!meta) return null;
+      const catLabel = CATEGORIES.find((c) => c.key === cat)?.label ?? cat;
+      return { cat, catLabel, itemLabel: meta.label, price: livePriceOf(storeId, cat, id), unit: meta.unit };
+    })
+    .filter((r): r is PreviewRow => r !== null);
+}
+
 export interface CompItem {
   item: string;
   id: string;

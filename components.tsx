@@ -39,6 +39,7 @@ import {
   Cut,
   LIVE_CATEGORIES,
   money,
+  previewRows,
   STORE_ABBR,
   STORE_SHORT,
   unitSuffix,
@@ -46,6 +47,7 @@ import {
   winnerOf,
 } from './data';
 import { categoryLows, cheapestAt, StoreRank, Unit } from './prices';
+import { MAX_PICKS, usePreview } from './preview';
 
 /* Compact top bar — safe-area padded so it clears the notch/status bar. */
 export function AppHeader() {
@@ -1850,7 +1852,12 @@ export function RankedStoreRow({
 /* Clean store card for the Stores tab — name, distance, per-category lows. */
 export function StoreCard2({ store }: { store: StoreWithDist }) {
   const { s, t } = useUI();
-  const lows = categoryLows(store.id);
+  const { picks } = usePreview();
+  // The user's pinned items, priced at THIS store — same items on every card, so
+  // it's a real comparison. Falls back to the store's cheapest-per-category when
+  // the user hasn't pinned anything.
+  const rows = previewRows(store.id, picks);
+  const anyPriced = rows.some((r) => r.price != null);
   const ad = weeklyAdFor(store.id);
   const [adOpen, setAdOpen] = useState(false);
   const statusLabel =
@@ -1864,17 +1871,16 @@ export function StoreCard2({ store }: { store: StoreWithDist }) {
       <Text style={s.storeCard2Meta}>
         {store.city} · {statusLabel}
       </Text>
-      {lows.length ? (
+      {anyPriced ? (
         <View style={s.scList}>
-          {lows.map((l) => (
-            <View key={l.catKey} style={s.scListRow}>
-              <Text style={s.scListCat}>{l.catLabel}</Text>
+          {rows.map((r) => (
+            <View key={`${r.cat}-${r.itemLabel}`} style={s.scListRow}>
+              <Text style={s.scListCat}>{r.catLabel}</Text>
               <Text style={s.scListItem} numberOfLines={1}>
-                {l.itemLabel}
+                {r.itemLabel}
               </Text>
-              <Text style={s.scListPrice}>
-                {money(l.price)}
-                {unitSuffix(l.unit)}
+              <Text style={[s.scListPrice, r.price == null && { color: t.inkFaint }]}>
+                {r.price != null ? `${money(r.price)}${unitSuffix(r.unit)}` : '—'}
               </Text>
             </View>
           ))}
@@ -1908,6 +1914,72 @@ export function StoreCard2({ store }: { store: StoreWithDist }) {
       ) : null}
       {ad ? <WeeklyAdModal storeName={store.name} ad={ad} visible={adOpen} onClose={() => setAdOpen(false)} /> : null}
     </View>
+  );
+}
+
+/* Pick which items appear on every Store card — so they're a real comparison. */
+export function PreviewPickerModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { s, t } = useUI();
+  const insets = useSafeAreaInsets();
+  const { picks, has, toggle, reset } = usePreview();
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={[s.root, { paddingTop: insets.top + 8 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}>
+          <Text style={s.h1clean}>Customize preview</Text>
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            style={{ paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: t.brand, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, color: '#fff', fontFamily: sans.bold }}>Done</Text>
+          </Pressable>
+        </View>
+        <Text style={[s.listHint, { marginBottom: 4 }]}>
+          Pick up to {MAX_PICKS} items to compare on every store card · {picks.length}/{MAX_PICKS}
+        </Text>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingHorizontal: 18 }}>
+          {LIVE_CATEGORIES.map((cat) => (
+            <View key={cat.key} style={{ marginTop: 10 }}>
+              <Text style={{ color: t.inkSoft, fontSize: 12, fontFamily: sans.semi, letterSpacing: 0.4, marginBottom: 4 }}>
+                {cat.emoji} {cat.label.toUpperCase()}
+              </Text>
+              {cat.items.map((it) => {
+                const on = has(cat.key, it.id);
+                const full = !on && picks.length >= MAX_PICKS;
+                return (
+                  <Pressable
+                    key={it.id}
+                    onPress={() => toggle(cat.key, it.id)}
+                    disabled={full}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: t.line, opacity: full ? 0.4 : 1 }}
+                  >
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 6,
+                        borderWidth: 1.5,
+                        borderColor: on ? t.brand : t.lineStrong,
+                        backgroundColor: on ? t.brand : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {on ? <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800', marginTop: -1 }}>✓</Text> : null}
+                    </View>
+                    <Text style={{ flex: 1, color: t.ink, fontSize: 15, fontFamily: sans.med }}>{it.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+          <Pressable onPress={reset} style={{ marginTop: 20, alignSelf: 'center' }} hitSlop={8}>
+            <Text style={{ color: t.inkSoft, fontSize: 13, fontFamily: sans.semi }}>Reset to default</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 

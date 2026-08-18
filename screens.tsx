@@ -19,6 +19,7 @@ import {
   ListOptionsSheet,
   ListPicker,
   PillTabs,
+  PreviewPickerModal,
   SearchBar,
   SettingsModal,
   StoreCard2,
@@ -356,18 +357,27 @@ export function DealsModal({ visible, onClose }: { visible: boolean; onClose: ()
 
 /* ---------- Stores ---------- */
 export function StoresScreen() {
-  const { s } = useUI();
+  const { s, t } = useUI();
   const { origin, maxMiles } = useLocation();
   useData(); // re-render when the daily feed lands so the weekly-ad date updates
   useTabCoach('stores', useIsFocused());
+  const [showCustomize, setShowCustomize] = useState(false);
   const nearby = storesNear(origin, maxMiles);
 
   return (
     <View style={s.root}>
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
-        <CoachTarget tab="stores" id="stores" style={{ paddingHorizontal: 18, paddingTop: 6 }}>
+        <CoachTarget
+          tab="stores"
+          id="stores"
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}
+        >
           <Text style={s.h1clean}>Stores near you</Text>
+          <Pressable onPress={() => setShowCustomize(true)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Ionicons name="options-outline" size={16} color={t.brand} />
+            <Text style={{ color: t.brand, fontSize: 13.5, fontFamily: sansBold }}>Customize</Text>
+          </Pressable>
         </CoachTarget>
         <Text style={s.listHint}>
           {nearby.length} within {maxMiles} mi of {origin.label}
@@ -380,6 +390,7 @@ export function StoresScreen() {
           </Text>
         )}
       </ScrollView>
+      <PreviewPickerModal visible={showCustomize} onClose={() => setShowCustomize(false)} />
     </View>
   );
 }
