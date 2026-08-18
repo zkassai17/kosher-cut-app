@@ -207,8 +207,10 @@ export function groupByStore(result: BasketResult, storeIds: string[]): {
   return { groups, unpriced };
 }
 
-// Categories that have at least one priced row somewhere — i.e. worth a tab.
-export const LIVE_CATEGORIES = CATEGORIES.filter((c) => rowsFor(c.key).length > 0);
+// Categories worth a tab. All defined categories carry real data — meat/dairy
+// via the hand-typed table, pantry via the daily curated feed — so any category
+// with items qualifies. (rowsFor only sees hand-typed prices, which pantry lacks.)
+export const LIVE_CATEGORIES = CATEGORIES.filter((c) => c.items.length > 0);
 
 /* ---------- Area-aware deals (for the Deals tab) ---------- */
 // A deal = an item where the cheapest store beats the next-cheapest store in

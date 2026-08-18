@@ -60,6 +60,20 @@ const PRODUCE_ITEMS: Item[] = [
   { id: 'potatoes', label: 'Idaho potatoes' },
 ];
 
+// Packaged pantry staples — priced per package ('ea'), matched from the catalog
+// by the daily scraper (curated). Kept to items that match cleanly & accurately.
+const PANTRY_ITEMS: Item[] = [
+  { id: 'ketchup', label: 'Ketchup' },
+  { id: 'mayonnaise', label: 'Mayonnaise' },
+  { id: 'croutons', label: 'Croutons' },
+  { id: 'pasta', label: 'Pasta' },
+  { id: 'olive_oil', label: 'Olive oil' },
+  { id: 'tuna', label: 'Canned tuna' },
+  { id: 'flour', label: 'Flour' },
+  { id: 'rice', label: 'Rice' },
+  { id: 'honey', label: 'Honey' },
+];
+
 const DELI_ITEMS: Item[] = [
   { id: 'pastrami', label: 'Sliced pastrami' },
   { id: 'bologna', label: 'Beef bologna' },
@@ -71,6 +85,7 @@ export const CATEGORIES: Category[] = [
   { key: 'chicken', label: 'Chicken', emoji: '🍗', unit: 'lb', items: CHICKEN_ITEMS },
   { key: 'beef', label: 'Beef', emoji: '🥩', unit: 'lb', items: BEEF_ITEMS },
   { key: 'dairy', label: 'Dairy', emoji: '🧀', unit: 'ea', items: DAIRY_ITEMS },
+  { key: 'pantry', label: 'Pantry', emoji: '🥫', unit: 'ea', items: PANTRY_ITEMS },
 ];
 // Produce/Deli item lists kept for later; not shown right now.
 void PRODUCE_ITEMS;
