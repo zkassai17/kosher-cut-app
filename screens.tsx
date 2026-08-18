@@ -576,7 +576,7 @@ export function ListScreen() {
           )}
           <ListPicker />
           <Pressable onPress={shareList} hitSlop={8} style={roundBtn}>
-            <Text style={{ fontSize: 16, color: t.brand, marginTop: -1 }}>↗</Text>
+            <Ionicons name="paper-plane-outline" size={16} color={t.brand} style={{ marginLeft: -1 }} />
           </Pressable>
         </CoachTarget>
 
