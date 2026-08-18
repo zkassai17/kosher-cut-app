@@ -955,13 +955,40 @@ export function AccountScreen() {
             );
           })}
         </CoachTarget>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 18, marginTop: 2 }}>
-          <Pressable onPress={() => setShowCreate(true)} hitSlop={8} style={{ paddingVertical: 10 }}>
-            <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>+ New list</Text>
+        <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 18, marginTop: 12 }}>
+          <Pressable
+            onPress={() => setShowCreate(true)}
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              paddingVertical: 13,
+              borderRadius: 14,
+              backgroundColor: t.brand,
+            }}
+          >
+            <Ionicons name="add" size={18} color="#fff" style={{ marginTop: -1 }} />
+            <Text style={{ color: '#fff', fontSize: 14.5, fontFamily: sansBold }}>New list</Text>
           </Pressable>
-          <Pressable onPress={() => setShowImport(true)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 10 }}>
-            <Ionicons name="download-outline" size={15} color={t.brand} />
-            <Text style={{ color: t.brand, fontSize: 14, fontFamily: sansBold }}>Import a list</Text>
+          <Pressable
+            onPress={() => setShowImport(true)}
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              paddingVertical: 13,
+              borderRadius: 14,
+              backgroundColor: t.brandSoft,
+              borderWidth: 1,
+              borderColor: t.line,
+            }}
+          >
+            <Ionicons name="download-outline" size={16} color={t.brand} />
+            <Text style={{ color: t.brand, fontSize: 14.5, fontFamily: sansBold }}>Import list</Text>
           </Pressable>
         </View>
 
