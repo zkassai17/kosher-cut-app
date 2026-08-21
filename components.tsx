@@ -850,6 +850,11 @@ const STORE_VIS: Record<string, { mono: string; color: string }> = {
   seasons_law: { mono: 'S', color: '#2E7D6B' },
   kolsave: { mono: 'KS', color: '#8A6D3B' },
   kmp: { mono: 'KMP', color: '#3A6B8A' },
+  kingdom: { mono: 'KK', color: '#B0472F' },
+  koshercentral: { mono: 'KC', color: '#2E6B8A' },
+  sarahstent: { mono: 'ST', color: '#7A5C3B' },
+  westernkosher: { mono: 'WK', color: '#3A7A5C' },
+  marketmaven: { mono: 'MM', color: '#8A5A6B' },
 };
 
 /* The koshercart wordmark: mono-line green cart + "kosher" (ink) "cart" (green),

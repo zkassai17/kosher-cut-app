@@ -28,6 +28,11 @@ const AREA_STORES = {
   fivetowns: ['gourmetglatt', 'seasons_law'],
   manhattan: ['six60one', 'kmp'],
   lakewood: ['superstop', 'nutmeg'],
+  // National expansion (all My Cloud Grocer — same crawler). Miami is a full
+  // 3-store comparison; LA/Baltimore start single-store until Tier-2 stores land.
+  miami: ['kingdom', 'koshercentral', 'sarahstent'],
+  la: ['westernkosher'],
+  baltimore: ['marketmaven'],
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -43,6 +48,13 @@ const HB_STORES = [
   { id: 'nutmeg', name: 'Nutmeg Kosher', origin: 'https://nutmegkoshermarket.com', region: 'Lakewood-NJ' },
   { id: 'seasons_law', name: 'Seasons (Lawrence)', origin: 'https://seasonskosher.com', region: 'Lawrence', seedDepts: STD_DEPTS },
   { id: 'six60one', name: '661', origin: 'https://six60one.com', region: 'New-York-City' },
+  // National expansion — My Cloud Grocer stores in new metros. `region` is the
+  // store-location URL slug the bare domain redirects to (verified live).
+  { id: 'kingdom', name: 'Kosher Kingdom', origin: 'https://kosherkingdom.com', region: 'miami' },
+  { id: 'koshercentral', name: 'KC Market', origin: 'https://koshercentral.com', region: 'Southern-Florida' },
+  { id: 'sarahstent', name: "Sarah's Tent", origin: 'https://sarahstentkoshermarket.com', region: 'Aventura-Florida' },
+  { id: 'westernkosher', name: 'Western Kosher', origin: 'https://westernkosher.com', region: 'Los-Angeles-Pico' },
+  { id: 'marketmaven', name: 'Market Maven', origin: 'https://marketmavenmd.com', region: 'Baltimore' },
 ];
 
 const SHOPIFY_STORES = [{ id: 'kmp', name: 'The Kosher Marketplace', origin: 'https://thekmp.com' }];

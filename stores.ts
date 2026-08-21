@@ -34,6 +34,9 @@ export const AREAS: Area[] = [
   { id: 'fivetowns', label: 'Five Towns (Cedarhurst)', lat: 40.6229, lng: -73.729 },
   { id: 'manhattan', label: 'Manhattan (UWS)', lat: 40.787, lng: -73.9754 },
   { id: 'lakewood', label: 'Lakewood', lat: 40.0978, lng: -74.2176 },
+  { id: 'miami', label: 'Miami / South Florida', lat: 25.97, lng: -80.15 },
+  { id: 'la', label: 'Los Angeles', lat: 34.05, lng: -118.38 },
+  { id: 'baltimore', label: 'Baltimore', lat: 39.37, lng: -76.72 },
 ];
 
 export const KSTORES: KStore[] = [
@@ -54,6 +57,17 @@ export const KSTORES: KStore[] = [
   // Lakewood, NJ
   { id: 'superstop', name: 'SuperStop', city: 'Lakewood, NJ', areaId: 'lakewood', lat: 40.083, lng: -74.209, status: 'online' },
   { id: 'nutmeg', name: 'Nutmeg Kosher', city: 'Lakewood, NJ', address: '485 Locust St', areaId: 'lakewood', lat: 40.073, lng: -74.193, status: 'live' },
+
+  // Miami / South Florida (all My Cloud Grocer — full 3-store comparison)
+  { id: 'kingdom', name: 'Kosher Kingdom', city: 'Aventura, FL', areaId: 'miami', lat: 25.958, lng: -80.143, status: 'live' },
+  { id: 'koshercentral', name: 'KC Market', city: 'Hollywood, FL', areaId: 'miami', lat: 26.011, lng: -80.163, status: 'live' },
+  { id: 'sarahstent', name: "Sarah's Tent", city: 'Aventura, FL', areaId: 'miami', lat: 25.966, lng: -80.144, status: 'live' },
+
+  // Los Angeles (more LA stores coming — Ariel Glatt, Koshco)
+  { id: 'westernkosher', name: 'Western Kosher', city: 'Los Angeles, CA', address: '4817 W Pico Blvd', areaId: 'la', lat: 34.048, lng: -118.345, status: 'live' },
+
+  // Baltimore
+  { id: 'marketmaven', name: 'Market Maven', city: 'Baltimore, MD', areaId: 'baltimore', lat: 39.373, lng: -76.717, status: 'live' },
 ];
 
 export interface Origin {

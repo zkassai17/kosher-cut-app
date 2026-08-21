@@ -59,6 +59,11 @@ export const STORE_ABBR: Record<string, string> = {
   six60one: '661',
   kmp: 'KMP',
   nutmeg: 'Nutmeg',
+  kingdom: 'Kingdom',
+  koshercentral: 'KC Market',
+  sarahstent: "Sarah's",
+  westernkosher: 'Western',
+  marketmaven: 'Market Maven',
 };
 
 export const storeHasData = (storeId: string): boolean =>
