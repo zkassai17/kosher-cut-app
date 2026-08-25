@@ -63,9 +63,10 @@ const SHOPIFY_STORES = [{ id: 'kmp', name: 'The Kosher Marketplace', origin: 'ht
 const SKIP_DEPT = /donation|takeout|catering|sushi|pizza|floral|flower|gift-?card|holiday-?special|platter|media/i;
 const MAX_CATEGORIES = 1200;
 
-// Optional CLI filter: `node catalog.mjs seasons_law` re-crawls just that store
+// Optional CLI filter: `node catalog.mjs seasons_law` re-crawls just that store,
+// or a comma-separated list `node catalog.mjs kingdom,koshercentral` for several
 // (merged into the existing catalog.json, other stores untouched).
-const ONLY = process.argv[2] || null;
+const ONLY = process.argv[2] ? new Set(process.argv[2].split(',').map((s) => s.trim())) : null;
 
 async function discoverDepartments(page, store) {
   await page.goto(`${store.origin}/${store.region}`, { waitUntil: 'domcontentloaded' });
@@ -222,7 +223,7 @@ async function run() {
   const out = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
 
   for (const store of HB_STORES) {
-    if (ONLY && store.id !== ONLY) continue;
+    if (ONLY && !ONLY.has(store.id)) continue;
     const existing = out[store.id] || [];
     try {
       const crawled = await crawlHb(page, store);
@@ -235,7 +236,7 @@ async function run() {
     writeFileSync(path, JSON.stringify(out)); // checkpoint after each store
   }
   for (const store of SHOPIFY_STORES) {
-    if (ONLY && store.id !== ONLY) continue;
+    if (ONLY && !ONLY.has(store.id)) continue;
     const existing = out[store.id] || [];
     try {
       const crawled = await crawlShopify(page, store);
