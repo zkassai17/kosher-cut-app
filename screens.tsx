@@ -757,17 +757,23 @@ function SwipeToDeleteRow({
     open.current = to > 0;
     Animated.spring(tx, { toValue: to, useNativeDriver: false, bounciness: 6, speed: 20 }).start();
   };
+  const wantsSwipe = (dx: number, dy: number) => enabled && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2;
   const pan = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_e, g) => enabled && g.dx > 6 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
+      // Capture-phase so we win the horizontal drag BEFORE the inner Pressable /
+      // the vertical ScrollView grab it. Taps (no move) pass through to the row.
+      onMoveShouldSetPanResponder: (_e, g) => wantsSwipe(g.dx, g.dy),
+      onMoveShouldSetPanResponderCapture: (_e, g) => wantsSwipe(g.dx, g.dy),
+      onPanResponderTerminationRequest: () => false, // don't let the ScrollView reclaim mid-swipe
       onPanResponderMove: (_e, g) => {
         const base = open.current ? REVEAL : 0;
         tx.setValue(Math.max(0, Math.min(REVEAL, base + g.dx)));
       },
       onPanResponderRelease: (_e, g) => {
         const base = open.current ? REVEAL : 0;
-        snap(base + g.dx > REVEAL * 0.5 ? REVEAL : 0);
+        snap(base + g.dx > REVEAL * 0.4 ? REVEAL : 0);
       },
+      onPanResponderTerminate: () => snap(open.current ? REVEAL : 0),
     })
   ).current;
 
