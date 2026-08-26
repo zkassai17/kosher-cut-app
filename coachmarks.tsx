@@ -28,7 +28,7 @@ const TOURS: Record<CoachTab, Step[]> = {
     {
       id: 'cats',
       title: 'Compare by category',
-      text: 'Chicken, Beef, Dairy, Pantry. Every item shows each store’s price side by side, with the cheapest flagged BEST.',
+      text: 'Chicken, Beef, Dairy, Pantry, Snacks. Every item shows each store’s price side by side, with the cheapest flagged BEST.',
     },
     {
       id: 'brands',
