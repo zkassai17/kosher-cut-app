@@ -457,39 +457,39 @@ export function CompareRow({
   ) : null;
 
   const buildPills = (fill: boolean) =>
-    storeIds.map((sid, i) => {
-      const p = prices[i];
-      // Only one store lists it → neutral (no BEST/TIE flag; caption says "Only X").
-      // Two+ stores: cheapest = BEST, unless the two cheapest are equal → TIE.
-      const isTie = multi && save === 0;
-      const state: PillState = pkgFlags?.[i]
-        ? p == null
+    // Only render stores that actually carry this item — a store without a price
+    // is dropped entirely (no empty cell), so a 3-store area shows just the 2 (or
+    // 1) stores that have it.
+    storeIds
+      .map((sid, i) => ({ sid, i, p: prices[i] }))
+      .filter((x) => x.p != null)
+      .map(({ sid, i, p }) => {
+        // Two+ stores: cheapest = BEST, unless the two cheapest are equal → TIE.
+        const isTie = multi && save === 0;
+        const state: PillState = pkgFlags?.[i]
+          ? 'pkg' // package price — neutral, tagged "pkg", never BEST/lose
+          : !multi
           ? 'none'
-          : 'pkg' // package price — neutral, tagged "pkg", never BEST/lose
-        : p == null
-        ? 'none'
-        : !multi
-        ? 'none'
-        : p === min
-        ? isTie
-          ? 'tie'
-          : 'win'
-        : 'lose';
-      // When a package store is in the row, label the per-lb pills "/lb" so the
-      // two aren't confused (e.g. 661 "/lb" next to KMP "pkg").
-      const unitTag = hasPkg && !pkgFlags?.[i] && p != null ? unitSuffix(unit) : undefined;
-      // On single-store rows the caption already names the store ("Only at Seasons"),
-      // so drop the pill's store label to avoid saying it twice.
-      return (
-        <PricePill
-          key={sid}
-          label={STORE_ABBR[sid] ?? sid}
-          price={p}
-          state={state}
-          unitTag={unitTag}
-          hideLabel={anyCount <= 1}
-          fill={fill}
-        />
+          : p === min
+          ? isTie
+            ? 'tie'
+            : 'win'
+          : 'lose';
+        // When a package store is in the row, label the per-lb pills "/lb" so the
+        // two aren't confused (e.g. 661 "/lb" next to KMP "pkg").
+        const unitTag = hasPkg && !pkgFlags?.[i] ? unitSuffix(unit) : undefined;
+        // On single-store rows the caption already names the store ("Only at Seasons"),
+        // so drop the pill's store label to avoid saying it twice.
+        return (
+          <PricePill
+            key={sid}
+            label={STORE_ABBR[sid] ?? sid}
+            price={p}
+            state={state}
+            unitTag={unitTag}
+            hideLabel={anyCount <= 1}
+            fill={fill}
+          />
       );
     });
 
