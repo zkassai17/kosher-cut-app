@@ -750,7 +750,7 @@ function SwipeToDeleteRow({
   children: React.ReactNode;
 }) {
   const { t } = useUI();
-  const REVEAL = 84;
+  const REVEAL = 72;
   const tx = useRef(new Animated.Value(0)).current;
   const open = useRef(false);
   const snap = (to: number) => {
@@ -779,28 +779,18 @@ function SwipeToDeleteRow({
 
   if (!enabled) return <>{children}</>;
   return (
-    <View style={{ borderRadius: 14, overflow: 'hidden' }}>
-      <View
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: REVEAL,
-          backgroundColor: t.oxblood,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+    <View>
+      {/* Floating round delete button, revealed as the card slides right. */}
+      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: REVEAL, alignItems: 'center', justifyContent: 'center' }}>
         <Pressable
           onPress={() => {
             snap(0);
             onDelete();
           }}
-          hitSlop={8}
-          style={{ width: REVEAL, height: '100%', alignItems: 'center', justifyContent: 'center' }}
+          hitSlop={10}
+          style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: t.oxblood, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Ionicons name="trash-outline" size={22} color="#fff" />
+          <Ionicons name="trash-outline" size={20} color="#fff" />
         </Pressable>
       </View>
       <Animated.View style={{ transform: [{ translateX: tx }] }} {...pan.panHandlers}>
