@@ -31,7 +31,7 @@ const AREA_STORES = {
   // National expansion (all My Cloud Grocer — same crawler). Miami is a full
   // 3-store comparison; LA/Baltimore start single-store until Tier-2 stores land.
   miami: ['kingdom', 'koshercentral', 'sarahstent'],
-  la: ['westernkosher'],
+  la: ['westernkosher', 'koshco'],
   baltimore: ['marketmaven'],
 };
 
@@ -58,6 +58,8 @@ const HB_STORES = [
 ];
 
 const SHOPIFY_STORES = [{ id: 'kmp', name: 'The Kosher Marketplace', origin: 'https://thekmp.com' }];
+
+const WOO_STORES = [{ id: 'koshco', name: 'Koshco', origin: 'https://shopkoshco.com' }];
 
 // Departments we skip (prepared food / non-grocery — not price comparisons).
 const SKIP_DEPT = /donation|takeout|catering|sushi|pizza|floral|flower|gift-?card|holiday-?special|platter|media/i;
@@ -170,6 +172,44 @@ async function crawlShopify(page, store) {
   return Array.from(map.values());
 }
 
+// WooCommerce Store API (open, no auth): /wp-json/wc/store/products paginated.
+// Prices are integers in minor units (e.g. 649 with currency_minor_unit 2 = $6.49);
+// `prices.price` is the active price (already reflects sales). All items 'ea'
+// (WooCommerce has no per-lb weight flag).
+async function crawlWoo(page, store) {
+  await page.goto(store.origin + '/', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  const items = await page.evaluate(async (origin) => {
+    const out = [];
+    for (let pg = 1; pg <= 80; pg++) {
+      const r = await fetch(`${origin}/wp-json/wc/store/products?per_page=100&page=${pg}`, {
+        headers: { accept: 'application/json' },
+      });
+      if (!r.ok) break;
+      const arr = await r.json();
+      if (!Array.isArray(arr) || !arr.length) break;
+      for (const p of arr) {
+        const pr = p.prices || {};
+        const minor = pr.currency_minor_unit != null ? pr.currency_minor_unit : 2;
+        const price = pr.price != null ? parseInt(pr.price, 10) / Math.pow(10, minor) : 0;
+        if (p.name && price > 0) out.push({ n: String(p.name).trim(), p: price, lb: false });
+      }
+      if (arr.length < 100) break;
+    }
+    return out;
+  }, store.origin);
+  // dedupe by name, keep cheapest
+  const map = new Map();
+  for (const it of items) {
+    if (!it.p) continue;
+    const k = it.n.toLowerCase();
+    const prev = map.get(k);
+    if (!prev || it.p < prev.p) map.set(k, it);
+  }
+  console.log(`  ✓ ${store.name}: ${map.size} products (woocommerce)`);
+  return Array.from(map.values());
+}
+
 // Compact "last seen" stamp: whole days since epoch. Kept per product so we can
 // age out only genuinely-delisted items, never items missing from one bad crawl.
 const TODAY = Math.floor(Date.now() / 86_400_000);
@@ -241,6 +281,19 @@ async function run() {
     try {
       const crawled = await crawlShopify(page, store);
       // Union-merge (see mergeStore): a thin/empty crawl never wipes coverage.
+      out[store.id] = mergeStore(existing, crawled);
+      console.log(`    ${store.id}: crawled ${crawled.length}, total after merge ${out[store.id].length}`);
+    } catch (e) {
+      console.error(`${store.id} failed:`, String(e).slice(0, 160));
+      out[store.id] = existing;
+    }
+    writeFileSync(path, JSON.stringify(out));
+  }
+  for (const store of WOO_STORES) {
+    if (ONLY && !ONLY.has(store.id)) continue;
+    const existing = out[store.id] || [];
+    try {
+      const crawled = await crawlWoo(page, store);
       out[store.id] = mergeStore(existing, crawled);
       console.log(`    ${store.id}: crawled ${crawled.length}, total after merge ${out[store.id].length}`);
     } catch (e) {

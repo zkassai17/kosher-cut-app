@@ -875,6 +875,7 @@ const STORE_VIS: Record<string, { mono: string; color: string }> = {
   sarahstent: { mono: 'ST', color: '#7A5C3B' },
   westernkosher: { mono: 'WK', color: '#3A7A5C' },
   marketmaven: { mono: 'MM', color: '#8A5A6B' },
+  koshco: { mono: 'KO', color: '#4A6B2E' },
 };
 
 /* The koshercart wordmark: mono-line green cart + "kosher" (ink) "cart" (green),

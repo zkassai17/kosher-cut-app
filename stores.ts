@@ -63,8 +63,9 @@ export const KSTORES: KStore[] = [
   { id: 'koshercentral', name: 'KC Market', city: 'Hollywood, FL', areaId: 'miami', lat: 26.011, lng: -80.163, status: 'live' },
   { id: 'sarahstent', name: "Sarah's Tent", city: 'Aventura, FL', areaId: 'miami', lat: 25.966, lng: -80.144, status: 'live' },
 
-  // Los Angeles (more LA stores coming — Ariel Glatt, Koshco)
+  // Los Angeles (Ariel Glatt is a possible 3rd — its price data is token-gated for now)
   { id: 'westernkosher', name: 'Western Kosher', city: 'Los Angeles, CA', address: '4817 W Pico Blvd', areaId: 'la', lat: 34.048, lng: -118.345, status: 'live' },
+  { id: 'koshco', name: 'Koshco', city: 'Los Angeles, CA', areaId: 'la', lat: 34.053, lng: -118.377, status: 'live' },
 
   // Baltimore
   { id: 'marketmaven', name: 'Market Maven', city: 'Baltimore, MD', areaId: 'baltimore', lat: 39.373, lng: -76.717, status: 'live' },

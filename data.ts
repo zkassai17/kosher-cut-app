@@ -64,6 +64,7 @@ export const STORE_ABBR: Record<string, string> = {
   sarahstent: "Sarah's",
   westernkosher: 'Western',
   marketmaven: 'Market Maven',
+  koshco: 'Koshco',
 };
 
 export const storeHasData = (storeId: string): boolean =>
