@@ -74,6 +74,20 @@ const PANTRY_ITEMS: Item[] = [
   { id: 'honey', label: 'Honey' },
 ];
 
+// Snacks & cereal — packaged, priced per package ('ea'), matched from the catalog.
+const SNACKS_ITEMS: Item[] = [
+  { id: 'potato_chips', label: 'Potato chips' },
+  { id: 'tortilla_chips', label: 'Tortilla chips' },
+  { id: 'pretzels', label: 'Pretzels' },
+  { id: 'popcorn', label: 'Popcorn' },
+  { id: 'cookies', label: 'Cookies' },
+  { id: 'crackers', label: 'Crackers' },
+  { id: 'cereal', label: 'Cereal' },
+  { id: 'bissli', label: 'Bissli' },
+  { id: 'bamba', label: 'Bamba' },
+  { id: 'rice_cakes', label: 'Rice cakes' },
+];
+
 const DELI_ITEMS: Item[] = [
   { id: 'pastrami', label: 'Sliced pastrami' },
   { id: 'bologna', label: 'Beef bologna' },
@@ -86,6 +100,7 @@ export const CATEGORIES: Category[] = [
   { key: 'beef', label: 'Beef', emoji: '🥩', unit: 'lb', items: BEEF_ITEMS },
   { key: 'dairy', label: 'Dairy', emoji: '🧀', unit: 'ea', items: DAIRY_ITEMS },
   { key: 'pantry', label: 'Pantry', emoji: '🥫', unit: 'ea', items: PANTRY_ITEMS },
+  { key: 'snacks', label: 'Snacks', emoji: '🍿', unit: 'ea', items: SNACKS_ITEMS },
 ];
 // Produce/Deli item lists kept for later; not shown right now.
 void PRODUCE_ITEMS;

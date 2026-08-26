@@ -96,6 +96,19 @@ const ALIASES: Record<string, { cat: string; id: string }> = {
   flour: { cat: 'pantry', id: 'flour' },
   rice: { cat: 'pantry', id: 'rice' },
   honey: { cat: 'pantry', id: 'honey' },
+  chips: { cat: 'snacks', id: 'potato_chips' },
+  'potato chips': { cat: 'snacks', id: 'potato_chips' },
+  'tortilla chips': { cat: 'snacks', id: 'tortilla_chips' },
+  pretzels: { cat: 'snacks', id: 'pretzels' },
+  pretzel: { cat: 'snacks', id: 'pretzels' },
+  popcorn: { cat: 'snacks', id: 'popcorn' },
+  cookies: { cat: 'snacks', id: 'cookies' },
+  cookie: { cat: 'snacks', id: 'cookies' },
+  crackers: { cat: 'snacks', id: 'crackers' },
+  cereal: { cat: 'snacks', id: 'cereal' },
+  bissli: { cat: 'snacks', id: 'bissli' },
+  bamba: { cat: 'snacks', id: 'bamba' },
+  'rice cakes': { cat: 'snacks', id: 'rice_cakes' },
 };
 
 // label/alias → {cat,id}, built once from the live item set + the shorthand above.
