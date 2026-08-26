@@ -63,10 +63,14 @@ async function callLLM(userText) {
   return (await r.json()).content?.[0]?.text || '';
 }
 
-// "August 2-7, 2026" -> "Aug 2–7" (no API key needed).
+// "SALES EFFECTIVE: AUGUST 23-28, 2026" -> "Aug 23–28" (no API key needed).
+// Robust to ALL-CAPS months and to the day-range dash being dropped by the PDF
+// text extractor (it often comes through as "2328").
 function effectiveDate(text) {
-  const m = text.match(/EFFECTIVE\S*\s+([A-Z][a-z]+)\.?\s+(\d{1,2})\s*[-–]\s*(\d{1,2})/);
-  return m ? `${m[1].slice(0, 3)} ${m[2]}–${m[3]}` : '';
+  const m = text.match(/EFFECTIVE[:\s]*([A-Za-z]+)\.?\s+(\d{2})\s*[-–—]?\s*(\d{2})/i);
+  if (!m) return '';
+  const mon = m[1][0].toUpperCase() + m[1].slice(1, 3).toLowerCase();
+  return `${mon} ${m[2]}–${m[3]}`;
 }
 
 async function findCircularUrl() {
@@ -100,7 +104,11 @@ export async function cedarWeeklyAd(fallback = null) {
   try {
     const pdfUrl = await findCircularUrl();
     const text = await pdfText(pdfUrl);
-    const effective = effectiveDate(text) || (fallback && fallback.effective) || '';
+    // Prefer the freshly-parsed date; if extraction drops it but the circular is
+    // unchanged, keep the cached date; then the caller's fallback.
+    let effective = effectiveDate(text);
+    if (!effective && cache.pdfUrl === pdfUrl && cache.effective) effective = cache.effective;
+    effective = effective || (fallback && fallback.effective) || '';
 
     // Highlights: reuse cache unless the circular changed; skip cleanly with no key.
     let highlights = cache.pdfUrl === pdfUrl && Array.isArray(cache.highlights) ? cache.highlights : null;
