@@ -19,31 +19,46 @@ interface Step {
   text: string;
 }
 
-// The tour for each tab. Keep it short — 2-3 highlights per page.
+// The tour for each tab. Steps anchored to a real element (search, cats, toggle,
+// cheapest, stores, lists) spotlight it; the rest show as a centered tip. Aim for
+// ~3-4 per page — enough to teach every feature without dragging.
 const TOURS: Record<CoachTab, Step[]> = {
   prices: [
-    { id: 'search', title: 'Search anything', text: 'Find any product across every nearby store — not just the staples.' },
+    { id: 'search', title: 'Search any product', text: 'Find anything across every nearby store — not just the staples. Try “green beans” or “cholent meat”.' },
     {
       id: 'cats',
       title: 'Compare by category',
-      text: 'Chicken, Beef, Dairy, or Pantry. Tap a dairy item or hot dogs to compare brands, and hit Deals for today’s biggest savings.',
+      text: 'Chicken, Beef, Dairy, Pantry. Every item shows each store’s price side by side, with the cheapest flagged BEST.',
     },
+    {
+      id: 'brands',
+      title: 'Compare brands',
+      text: 'On dairy & pantry items, tap the › to open a brand-by-brand page — see exactly which brand is cheapest at which store.',
+    },
+    { id: 'deals', title: 'Today’s deals', text: 'The 🔥 Deals tab surfaces the biggest savings near you right now, and stores only appear where they actually carry an item.' },
   ],
   list: [
-    { id: 'toggle', title: '1 store vs Split', text: 'Shop the cheapest single store for one trip — or Split across stores to save even more.' },
+    { id: 'toggle', title: '1 store vs Split', text: 'Shop the cheapest single store for one trip — or Split across stores to squeeze out every dollar.' },
     { id: 'cheapest', title: 'Your cheapest total', text: 'We total your whole list at each store, so you always know where to go.' },
+    { id: 'build', title: 'Build & check off', text: 'Add items from any category, tick them off as you shop, and drop in one-off “just this trip” items.' },
   ],
   stores: [
     {
       id: 'stores',
       title: 'Stores near you',
-      text: 'The kosher stores in your area, how far each is, and what they carry. Tap the location up top to change your area or distance.',
+      text: 'Every kosher store in your area, how far it is, and what it carries. Tap the location up top to change your area or distance.',
     },
+    { id: 'customize', title: 'Customize the preview', text: 'Choose which items show on each store card, so you’re always comparing the same things at a glance.' },
+    { id: 'ads', title: 'Weekly circulars', text: 'Some stores post a weekly sale flyer (like Cedar’s). Tap a store to see this week’s deals.' },
   ],
-  account: [{ id: 'lists', title: 'Your lists', text: 'Tap a list to edit it, or make a new one for each trip — they sync to your account.' }],
+  account: [
+    { id: 'lists', title: 'Your lists', text: 'Tap a list to edit it, or keep separate lists for Shabbos, Yom Tov, and your weekly run — they sync to your account.' },
+    { id: 'swipe', title: 'Swipe to delete', text: 'Slide any list you made to the right to reveal a trash button and remove it.' },
+    { id: 'share', title: 'Share & import', text: 'Send a list to family with the paper-plane ✈, or import one they send — paste their message, or just type your items.' },
+  ],
 };
 
-const SEEN_KEY = (tab: CoachTab) => `kc.coach.${tab}.v1`;
+const SEEN_KEY = (tab: CoachTab) => `kc.coach.${tab}.v2`;
 const DISABLE_KEY = 'kc.coach.disabled.v1'; // "Skip all" turns off every tour
 
 type RefMap = Record<string, Record<string, React.RefObject<View | null>>>;
