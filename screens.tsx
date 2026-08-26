@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -39,7 +39,7 @@ import {
   unitSuffix,
 } from './data';
 import { useData } from './datactx';
-import { decodeList, encodeList, shareText } from './share';
+import { decodeList, encodeList, parseTextList, shareText } from './share';
 import { BrandItem, brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
 import { useIsFocused } from '@react-navigation/native';
@@ -1159,16 +1159,34 @@ export function ImportListModal({ visible, onClose }: { visible: boolean; onClos
   const [text, setText] = useState('');
   const [err, setErr] = useState(false);
 
-  const doImport = () => {
-    const parsed = decodeList(text);
-    if (!parsed || !parsed.items.length) {
-      setErr(true);
-      return;
-    }
-    basket.importList(parsed);
+  const finish = () => {
     setText('');
     setErr(false);
     onClose();
+  };
+
+  const doImport = () => {
+    // 1) A koshercart share code (kc1:…) → rebuild the exact shared list.
+    const coded = decodeList(text);
+    if (coded && coded.items.length) {
+      basket.importList(coded);
+      finish();
+      return;
+    }
+    // 2) A plain typed/pasted list → match each line to what koshercart tracks.
+    const parsed = parseTextList(text);
+    if (parsed.items.length) {
+      basket.importList({ label: 'Imported list', emoji: '🛒', items: parsed.items });
+      finish();
+      if (parsed.unmatched.length) {
+        Alert.alert(
+          `Added ${parsed.items.length} item${parsed.items.length > 1 ? 's' : ''}`,
+          `Couldn't find: ${parsed.unmatched.slice(0, 8).join(', ')}${parsed.unmatched.length > 8 ? '…' : ''}.\n\nkoshercart compares staple grocery items — those aren't tracked yet.`
+        );
+      }
+      return;
+    }
+    setErr(true);
   };
 
   return (
@@ -1184,7 +1202,7 @@ export function ImportListModal({ visible, onClose }: { visible: boolean; onClos
           >
             <Text style={s.modalTitle}>Import a list</Text>
             <Text style={{ color: t.inkSoft, fontSize: 13, marginTop: 2, fontFamily: sansMed }}>
-              Paste the shared list (or its “kc1:…” code) below.
+              Type your items — one per line — or paste a shared koshercart list.
             </Text>
 
             <TextInput
@@ -1193,7 +1211,7 @@ export function ImportListModal({ visible, onClose }: { visible: boolean; onClos
                 setText(v);
                 setErr(false);
               }}
-              placeholder="Paste here…"
+              placeholder={'e.g.\nChicken cutlets\nGround beef\nMilk\nEggs\nKetchup'}
               placeholderTextColor={t.inkFaint}
               multiline
               autoFocus
@@ -1213,7 +1231,7 @@ export function ImportListModal({ visible, onClose }: { visible: boolean; onClos
             />
             {err ? (
               <Text style={{ color: t.oxblood, fontSize: 12.5, marginTop: 6, fontFamily: sansMed }}>
-                Couldn't read a list in that — make sure you pasted the whole message.
+                Couldn't match any items — type one per line (e.g. Milk, Chicken cutlets, Ketchup).
               </Text>
             ) : null}
 
