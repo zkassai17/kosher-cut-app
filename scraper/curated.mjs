@@ -74,13 +74,13 @@ const SPECS = {
   'pantry|honey':          { core: 'honey', accept: ['honey'], reject: ['mustard','herring','glazed','bbq','cake','graham','nut','bunches','roasted','chicken','wheat','dijon','garlic','teriyaki','soy','wings','salmon','yogurt','ygrt','sauce','barbecue','blend','greek','cookie','candy','soap','tea','lotion','shampoo','wash','scrub','drink','ginseng','mango','lip','body','cream','butter'], maxPrice: 15 },
   // Snacks & cereal — cheap packaged bags. Core-noun keeps generic words honest;
   // maxPrice drops catering/oversized packs. Verified clean against the catalog.
-  'snacks|potato_chips':   { core: 'chip', accept: ['potato chip'], reject: ['tortilla','pita','corn','sweet potato','plantain','veggie','bean','kale','apple','chocolate','cookie','dip','stix','stick','flute','popcorn'], maxPrice: 6 },
-  'snacks|tortilla_chips': { core: 'chip', accept: ['tortilla chip'], reject: ['potato','pita','veggie','bean','chocolate','dip','salsa'], maxPrice: 6 },
-  'snacks|pretzels':       { core: 'pretzel', accept: ['pretzel'], reject: ['chocolate','yogurt','covered','dip','bun','roll','soft','challah','stuffed','crumb','dog','filled'], maxPrice: 6 },
-  'snacks|popcorn':        { core: 'popcorn', accept: ['popcorn'], reject: ['kernel','oil','unpopped','microwave','ball','chocolate','drizzle'], maxPrice: 6 },
-  'snacks|cookies':        { core: 'cookie', accept: ['cookie'], reject: ['dough','mix','ice cream','crumb','pie','cutter','cereal'], maxPrice: 6 },
-  'snacks|crackers':       { core: 'cracker', accept: ['cracker'], reject: ['graham','matzo','dip','soup'], maxPrice: 6 },
-  'snacks|cereal':         { core: 'cereal', accept: ['cereal'], reject: ['bar','cup','single','snack','granola','oatmeal','milk','cream','drink','shake'], maxPrice: 9 },
+  'snacks|potato_chips':   { core: 'chip', accept: ['potato chip'], reject: ['tortilla','pita','corn','sweet potato','plantain','veggie','bean','kale','apple','chocolate','cookie','dip','stix','stick','flute','popcorn'], minPrice: 1.75, maxPrice: 8 },
+  'snacks|tortilla_chips': { core: 'chip', accept: ['tortilla chip'], reject: ['potato','pita','veggie','bean','chocolate','dip','salsa'], minPrice: 1.5, maxPrice: 8 },
+  'snacks|pretzels':       { core: 'pretzel', accept: ['pretzel'], reject: ['chocolate','yogurt','covered','dip','bun','roll','soft','challah','stuffed','crumb','dog','filled'], minPrice: 1.5, maxPrice: 7 },
+  'snacks|popcorn':        { core: 'popcorn', accept: ['popcorn'], reject: ['kernel','oil','unpopped','microwave','ball','chocolate','drizzle'], minPrice: 1.5, maxPrice: 8 },
+  'snacks|cookies':        { core: 'cookie', accept: ['cookie'], reject: ['dough','mix','ice cream','crumb','pie','cutter','cereal'], minPrice: 1.75, maxPrice: 8 },
+  'snacks|crackers':       { core: 'cracker', accept: ['cracker'], reject: ['graham','matzo','dip','soup','animal'], minPrice: 1.75, maxPrice: 8 },
+  'snacks|cereal':         { core: 'cereal', accept: ['cereal'], reject: ['bar','cup','single','snack','granola','oatmeal','milk','cream','drink','shake'], minPrice: 2, maxPrice: 9 },
   'snacks|bissli':         { accept: ['bissli'], reject: [], maxPrice: 5 },
   'snacks|bamba':          { accept: ['bamba'], reject: [], maxPrice: 5 },
   'snacks|rice_cakes':     { core: 'cake', accept: ['rice cake'], reject: ['chocolate','caramel','drizzle'], maxPrice: 5 },
@@ -94,6 +94,7 @@ export function bestMatch(products, spec) {
     if (!(pr > 0)) continue;
     if (spec.lb && !p.lb) continue;
     if (spec.maxPrice && pr > spec.maxPrice) continue;
+    if (spec.minPrice && pr < spec.minPrice) continue; // skip lunchbox singles → compare full-size packages
     if (!spec.accept.some((a) => n.includes(a))) continue;
     if (spec.reject.some((r) => n.includes(r))) continue;
     if (spec.core && !coreNounIs(p.n, spec.core)) continue;
