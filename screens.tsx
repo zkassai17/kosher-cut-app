@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { Alert, Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -42,7 +42,7 @@ import { useData } from './datactx';
 import { decodeList, encodeList, parseTextList, shareText } from './share';
 import { BrandItem, brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { CoachTarget, useTabCoach } from './coachmarks';
 import { sans } from './theme';
 
@@ -737,6 +737,73 @@ export function ListScreen() {
 }
 
 /* ---------- Account: personal home + a tappable list of your lists ---------- */
+// Swipe a saved list to the RIGHT to reveal a trash button (built on RN's
+// PanResponder — no gesture-handler dep). Disabled for preset lists (they can't
+// be deleted). Deleting happens right here on the Account page, so you stay put.
+function SwipeToDeleteRow({
+  enabled,
+  onDelete,
+  children,
+}: {
+  enabled: boolean;
+  onDelete: () => void;
+  children: React.ReactNode;
+}) {
+  const { t } = useUI();
+  const REVEAL = 84;
+  const tx = useRef(new Animated.Value(0)).current;
+  const open = useRef(false);
+  const snap = (to: number) => {
+    open.current = to > 0;
+    Animated.spring(tx, { toValue: to, useNativeDriver: false, bounciness: 6, speed: 20 }).start();
+  };
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_e, g) => enabled && g.dx > 6 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
+      onPanResponderMove: (_e, g) => {
+        const base = open.current ? REVEAL : 0;
+        tx.setValue(Math.max(0, Math.min(REVEAL, base + g.dx)));
+      },
+      onPanResponderRelease: (_e, g) => {
+        const base = open.current ? REVEAL : 0;
+        snap(base + g.dx > REVEAL * 0.5 ? REVEAL : 0);
+      },
+    })
+  ).current;
+
+  if (!enabled) return <>{children}</>;
+  return (
+    <View style={{ borderRadius: 14, overflow: 'hidden' }}>
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: REVEAL,
+          backgroundColor: t.oxblood,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Pressable
+          onPress={() => {
+            snap(0);
+            onDelete();
+          }}
+          hitSlop={8}
+          style={{ width: REVEAL, height: '100%', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Ionicons name="trash-outline" size={22} color="#fff" />
+        </Pressable>
+      </View>
+      <Animated.View style={{ transform: [{ translateX: tx }] }} {...pan.panHandlers}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
 export function AccountScreen() {
   const { s, t } = useUI();
   const { origin, maxMiles } = useLocation();
@@ -911,8 +978,17 @@ export function AccountScreen() {
             const cheapest = listRes.get(l.id)?.cheapest ?? null;
             const nItems = `${l.items.length} ${l.items.length === 1 ? 'item' : 'items'}`;
             return (
-              <Pressable
+              <SwipeToDeleteRow
                 key={l.id}
+                enabled={!basket.isPreset(l.id)}
+                onDelete={() =>
+                  Alert.alert('Delete list', `Delete “${l.label}”? This can't be undone.`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: () => basket.deleteList(l.id) },
+                  ])
+                }
+              >
+              <Pressable
                 onPress={() => openList(l.id)}
                 style={{
                   flexDirection: 'row',
@@ -954,6 +1030,7 @@ export function AccountScreen() {
                 </Pressable>
                 <Text style={{ color: t.inkFaint, fontSize: 24, fontFamily: sansMed }}>›</Text>
               </Pressable>
+              </SwipeToDeleteRow>
             );
           })}
         </CoachTarget>
@@ -1424,6 +1501,7 @@ export function AddItemsModal({
   const { s, t } = useUI();
   const basket = useBasket();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const [cat, setCat] = useState('chicken');
   const [q, setQ] = useState('');
   const query = q.trim().toLowerCase();
@@ -1608,7 +1686,7 @@ export function AddItemsModal({
           ) : null}
 
           {custom ? (
-            <Pressable onPress={() => { basket.deleteList(basket.active.id); onClose(); }} style={{ alignSelf: 'center', marginTop: 26, padding: 8 }}>
+            <Pressable onPress={() => { basket.deleteList(basket.active.id); onClose(); navigation.navigate('Account'); }} style={{ alignSelf: 'center', marginTop: 26, padding: 8 }}>
               <Text style={{ color: t.oxblood, fontSize: 13, fontFamily: sansSemi }}>Delete this list</Text>
             </Pressable>
           ) : null}
