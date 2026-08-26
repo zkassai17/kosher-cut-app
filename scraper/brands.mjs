@@ -125,6 +125,83 @@ export const SPECS = {
     variants: ['reduced fat', 'cocktail', 'stadium', 'skinless'],
     blockBrands: ["Frank's", 'Franks', 'Kraft', 'Heinz', 'Empire', 'New', 'Frankischer'],
   },
+  // --- Snacks: brand-by-brand drilldowns (like dairy). minPrice keeps them to
+  // full-size bags; empty variants = one row per brand (its cheapest bag). ---
+  potato_chips: {
+    minPrice: 1.75, maxPrice: 8, core: 'chip', accept: ['potato chip'],
+    reject: ['tortilla', 'pita', 'corn', 'sweet potato', 'plantain', 'veggie', 'bean', 'kale', 'apple', 'chocolate', 'cookie', 'dip', 'stix', 'flute', 'popcorn'],
+    brands: {
+      utz: 'Utz', "lay's": "Lay's", lays: "Lay's", wise: 'Wise', "herr's": "Herr's", herrs: "Herr's", herr: "Herr's",
+      pringles: 'Pringles', kettle: 'Kettle', 'cape cod': 'Cape Cod', ruffles: 'Ruffles', popchips: 'Popchips', terra: 'Terra',
+      "bloom's": "Bloom's", blooms: "Bloom's", "lieber's": "Lieber's", liebers: "Lieber's", lieber: "Lieber's",
+      boulder: 'Boulder Canyon', tuscanini: 'Tuscanini', bakol: 'Bakol', 'way better': 'Way Better',
+    },
+    variants: [],
+    mappedOnly: true,
+    blockBrands: ['Gefen', 'Osem'],
+  },
+  tortilla_chips: {
+    minPrice: 1.5, maxPrice: 8, core: 'chip', accept: ['tortilla chip'],
+    reject: ['potato', 'pita', 'veggie', 'bean', 'chocolate', 'dip', 'salsa'],
+    brands: {
+      'golden fluff': 'Golden Fluff', golden: 'Golden Fluff', doritos: 'Doritos', 'garden of eatin': "Garden of Eatin'",
+      terra: 'Terra', tuscanini: 'Tuscanini', 'on the border': 'On The Border', "late july": 'Late July',
+    },
+    variants: [],
+    mappedOnly: true,
+  },
+  pretzels: {
+    minPrice: 1.5, maxPrice: 7, core: 'pretzel', accept: ['pretzel'],
+    reject: ['chocolate', 'yogurt', 'covered', 'dip', 'bun', 'roll', 'soft', 'challah', 'stuffed', 'crumb', 'dog', 'filled'],
+    brands: {
+      "bloom's": "Bloom's", blooms: "Bloom's", shufra: 'Shufra', utz: 'Utz', "herr's": "Herr's", herrs: "Herr's", herr: "Herr's",
+      "lieber's": "Lieber's", liebers: "Lieber's", lieber: "Lieber's", haddar: 'Haddar', bachman: 'Bachman', unique: 'Unique',
+      "snyder's": "Snyder's", snyders: "Snyder's", gefen: 'Gefen', "j&j": 'J&J',
+    },
+    variants: [],
+    mappedOnly: true,
+  },
+  popcorn: {
+    minPrice: 1.5, maxPrice: 8, core: 'popcorn', accept: ['popcorn'],
+    reject: ['kernel', 'oil', 'unpopped', 'microwave', 'ball', 'chocolate', 'drizzle'],
+    brands: {
+      'golden fluff': 'Golden Fluff', golden: 'Golden Fluff', sunrise: 'Sunrise', 'pop time': 'Pop Time', poptime: 'Pop Time',
+      carmit: 'Carmit', carmitte: 'Carmit', 'skinny pop': 'Skinny Pop', skinnypop: 'Skinny Pop', 'boom chicka': 'Boomchickapop', paskesz: 'Paskesz',
+    },
+    variants: [],
+    mappedOnly: true,
+  },
+  cookies: {
+    minPrice: 1.75, maxPrice: 8, core: 'cookie', accept: ['cookie'],
+    reject: ['dough', 'mix', 'ice cream', 'crumb', 'pie', 'cutter', 'cereal'],
+    brands: {
+      "bloom's": "Bloom's", blooms: "Bloom's", "lieber's": "Lieber's", liebers: "Lieber's", lieber: "Lieber's",
+      paskesz: 'Paskesz', ostreicher: "Ostreicher's", "stella d'oro": "Stella D'oro", 'stella doro': "Stella D'oro",
+      gefen: 'Gefen', shufra: 'Shufra', "mrs. fields": 'Mrs. Fields', 'mrs fields': 'Mrs. Fields', oreo: 'Oreo',
+    },
+    variants: [],
+    mappedOnly: true,
+  },
+  crackers: {
+    minPrice: 1.75, maxPrice: 8, core: 'cracker', accept: ['cracker'],
+    reject: ['graham', 'matzo', 'dip', 'soup', 'animal'],
+    brands: {
+      "lieber's": "Lieber's", liebers: "Lieber's", lieber: "Lieber's", "bloom's": "Bloom's", blooms: "Bloom's",
+      imperial: 'Imperial', haddar: 'Haddar', osem: 'Osem', gefen: 'Gefen', manischewitz: 'Manischewitz', "j&j": 'J&J', tam: 'Tam Tam', 'tam tam': 'Tam Tam',
+    },
+    variants: [],
+    mappedOnly: true,
+  },
+  cereal: {
+    minPrice: 2, maxPrice: 9, core: 'cereal', accept: ['cereal'],
+    reject: ['bar', 'cup', 'single', 'snack', 'granola', 'oatmeal', 'milk', 'cream', 'drink', 'shake'],
+    brands: {
+      post: 'Post', "kellogg's": "Kellogg's", kelloggs: "Kellogg's", kellogg: "Kellogg's", quaker: 'Quaker',
+      'general mills': 'General Mills', "nature's path": "Nature's Path", 'malt-o-meal': 'Malt-O-Meal', erewhon: 'Erewhon', 'cascadian': 'Cascadian Farm',
+    },
+    variants: [],
+    mappedOnly: true,
+  },
 };
 
 const norm = (s) => (s || '').toLowerCase();
@@ -198,6 +275,7 @@ export function parseProduct(product, spec) {
   if (spec.reject.some((r) => name.includes(r))) return null; // junk / wrong product
   if (spec.core && !coreNounIs(product.n, spec.core)) return null; // "milk" is just a modifier here
   if (spec.maxPrice && product.p > spec.maxPrice) return null; // bulk / catering size — not a shopper comparison
+  if (spec.minPrice && product.p < spec.minPrice) return null; // lunchbox singles — compare full-size packages
   const sizeM = name.match(SIZE_RE);
   const size = sizeM ? `${sizeM[1]} ${sizeM[2].toLowerCase()}` : null;
   // Known alias first (canonical spelling + cross-store normalization), else
@@ -209,7 +287,10 @@ export function parseProduct(product, spec) {
       break;
     }
   }
-  if (!brand) brand = extractBrand(product.n);
+  // mappedOnly: for messy categories (snacks) only trust the curated brand map;
+  // unmapped products fall to the "other" list instead of inventing junk brands
+  // from a stray leading word ("Snack Factory" → "Snack").
+  if (!brand && !spec.mappedOnly) brand = extractBrand(product.n);
   if (brand && spec.blockBrands && spec.blockBrands.some((b) => b.toLowerCase() === brand.toLowerCase())) return null; // non-milk brand
   const variant = spec.variants.find((v) => name.includes(v)) || null;
   // Match on BRAND (+ regular/whipped variant). Size is often missing from a
