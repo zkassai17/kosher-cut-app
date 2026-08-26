@@ -124,19 +124,25 @@ function PricePill({
   state,
   unitTag,
   hideLabel,
+  fill,
 }: {
   label: string;
   price: number | null;
   state: PillState;
   unitTag?: string; // e.g. "/lb" — shown under the price to disambiguate units in a mixed row
   hideLabel?: boolean; // single-store rows name the store in the caption, so skip the pill label
+  fill?: boolean; // stretch to fill (stacked rows) instead of the fixed 72px width
 }) {
   const { s } = useUI();
+  const fillStyle = fill ? { width: undefined as undefined, flex: 1 } : null;
   if (price == null) {
+    // Store doesn't list this item — show a receding, dashed "n/a" cell so it
+    // reads as intentional, not a broken or missing price.
     return (
-      <View style={[s.pill, s.pillLose]}>
-        <Text style={s.pillLabel}>{label}</Text>
-        <Text style={s.pillPriceLose}>—</Text>
+      <View style={[s.pill, s.pillEmpty, fillStyle]}>
+        {!hideLabel ? <Text style={s.pillLabelFaint}>{label}</Text> : null}
+        <Text style={s.pillDash}>—</Text>
+        <Text style={s.pillFlagMuted}>n/a</Text>
       </View>
     );
   }
@@ -144,7 +150,7 @@ function PricePill({
   const priceStyle = state === 'win' ? s.pillPriceWin : state === 'lose' ? s.pillPriceLose : s.pillPrice;
   const flagged = state === 'win' || state === 'tie' || state === 'pkg';
   return (
-    <View style={[s.pill, box]}>
+    <View style={[s.pill, box, fillStyle]}>
       {!hideLabel ? <Text style={s.pillLabel}>{label}</Text> : null}
       <Text style={priceStyle}>{money(price)}</Text>
       {state === 'win' && (
@@ -417,95 +423,103 @@ export function CompareRow({
 
   const rowPress = onPress ?? (canAdd ? doToggle : undefined);
 
+  const checkbox = canAdd ? (
+    <Animated.View
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        marginRight: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: inList ? t.brand : 'transparent',
+        borderWidth: 1.5,
+        borderColor: inList ? t.brand : t.lineStrong,
+        transform: [{ scale: checkPop }],
+      }}
+    >
+      <Text style={{ color: inList ? '#fff' : t.inkSoft, fontSize: 14, fontWeight: '800', marginTop: -1 }}>
+        {inList ? '✓' : '+'}
+      </Text>
+    </Animated.View>
+  ) : null;
+
+  const captionNode = caption ? (
+    multi && save > 0 ? (
+      <Pop>
+        <Text style={s.cutSave}>{caption}</Text>
+      </Pop>
+    ) : (
+      <Text style={[s.cutSave, s.cutSaveMuted]}>{caption}</Text>
+    )
+  ) : null;
+
+  const buildPills = (fill: boolean) =>
+    storeIds.map((sid, i) => {
+      const p = prices[i];
+      // Only one store lists it → neutral (no BEST/TIE flag; caption says "Only X").
+      // Two+ stores: cheapest = BEST, unless the two cheapest are equal → TIE.
+      const isTie = multi && save === 0;
+      const state: PillState = pkgFlags?.[i]
+        ? p == null
+          ? 'none'
+          : 'pkg' // package price — neutral, tagged "pkg", never BEST/lose
+        : p == null
+        ? 'none'
+        : !multi
+        ? 'none'
+        : p === min
+        ? isTie
+          ? 'tie'
+          : 'win'
+        : 'lose';
+      // When a package store is in the row, label the per-lb pills "/lb" so the
+      // two aren't confused (e.g. 661 "/lb" next to KMP "pkg").
+      const unitTag = hasPkg && !pkgFlags?.[i] && p != null ? unitSuffix(unit) : undefined;
+      // On single-store rows the caption already names the store ("Only at Seasons"),
+      // so drop the pill's store label to avoid saying it twice.
+      return (
+        <PricePill
+          key={sid}
+          label={STORE_ABBR[sid] ?? sid}
+          price={p}
+          state={state}
+          unitTag={unitTag}
+          hideLabel={anyCount <= 1}
+          fill={fill}
+        />
+      );
+    });
+
+  // Stacked layout for brand-drilldown rows (dairy/pantry): the title is a long
+  // product name and there are up to 3 stores, so pills can't fit beside it.
+  // Title (+ chevron) gets a full-width line; pills spread evenly below.
+  if (chevron) {
+    return (
+      <View style={s.cutRowStacked}>
+        <Pressable style={s.cutStackedHead} onPress={rowPress} onLongPress={reportPrice} hitSlop={6}>
+          <Text style={[s.cutName, { flex: 1 }]}>{item}</Text>
+          <View style={s.chevBadge}>
+            <Text style={s.chevGlyph}>›</Text>
+          </View>
+        </Pressable>
+        {captionNode}
+        <View style={s.pillRowWide}>{buildPills(true)}</View>
+      </View>
+    );
+  }
+
+  // Inline layout — 2-store areas, beef/chicken, and search rows (unchanged).
   return (
     <View style={s.cutRow}>
-      <Pressable
-        style={s.cutLeft}
-        onPress={rowPress}
-        onLongPress={reportPrice}
-        hitSlop={6}
-      >
+      <Pressable style={s.cutLeft} onPress={rowPress} onLongPress={reportPrice} hitSlop={6}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {canAdd ? (
-            <Animated.View
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                marginRight: 9,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: inList ? t.brand : 'transparent',
-                borderWidth: 1.5,
-                borderColor: inList ? t.brand : t.lineStrong,
-                transform: [{ scale: checkPop }],
-              }}
-            >
-              <Text style={{ color: inList ? '#fff' : t.inkSoft, fontSize: 14, fontWeight: '800', marginTop: -1 }}>
-                {inList ? '✓' : '+'}
-              </Text>
-            </Animated.View>
-          ) : null}
+          {checkbox}
           <Text style={[s.cutName, { flexShrink: 1 }]}>{item}</Text>
         </View>
-        {caption ? (
-          multi && save > 0 ? (
-            <Pop>
-              <Text style={s.cutSave}>{caption}</Text>
-            </Pop>
-          ) : (
-            <Text style={[s.cutSave, s.cutSaveMuted]}>{caption}</Text>
-          )
-        ) : null}
+        {captionNode}
       </Pressable>
-      {chevron ? (
-        <Pressable
-          onPress={rowPress}
-          hitSlop={8}
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            marginRight: 8,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: t.brandSoft,
-            borderWidth: 1,
-            borderColor: t.brand,
-          }}
-        >
-          <Text style={{ color: t.brand, fontSize: 18, fontFamily: sans.bold, marginTop: -2 }}>›</Text>
-        </Pressable>
-      ) : null}
-      <View style={s.pillGroup}>
-        {storeIds.map((sid, i) => {
-          const p = prices[i];
-          // Only one store lists it → neutral (no BEST/TIE flag; caption says "Only X").
-          // Two+ stores: cheapest = BEST, unless the two cheapest are equal → TIE.
-          const isTie = multi && save === 0;
-          const state: PillState = pkgFlags?.[i]
-            ? p == null
-              ? 'none'
-              : 'pkg' // package price — neutral, tagged "pkg", never BEST/lose
-            : p == null
-            ? 'none'
-            : !multi
-            ? 'none'
-            : p === min
-            ? isTie
-              ? 'tie'
-              : 'win'
-            : 'lose';
-          // When a package store is in the row, label the per-lb pills "/lb" so the
-          // two aren't confused (e.g. 661 "/lb" next to KMP "pkg").
-          const unitTag = hasPkg && !pkgFlags?.[i] && p != null ? unitSuffix(unit) : undefined;
-          // On single-store rows the caption already names the store ("Only at Seasons"),
-          // so drop the pill's store label to avoid saying it twice.
-          return (
-            <PricePill key={sid} label={STORE_ABBR[sid] ?? sid} price={p} state={state} unitTag={unitTag} hideLabel={anyCount <= 1} />
-          );
-        })}
-      </View>
+      <View style={s.pillGroup}>{buildPills(false)}</View>
     </View>
   );
 }

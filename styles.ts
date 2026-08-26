@@ -190,6 +190,38 @@ export function makeStyles(t: Theme) {
     pillPriceLose: { fontFamily: mono, fontWeight: '600', fontSize: 14, color: t.inkSoft },
     pillFlag: { fontFamily: mono, fontSize: 8.5, letterSpacing: 0.5, color: t.brand, fontWeight: '800' },
     pillFlagMuted: { fontFamily: mono, fontSize: 8.5, letterSpacing: 0.5, color: t.inkFaint, fontWeight: '700' },
+    // "This store doesn't list it" — a dashed, receding cell so it reads as
+    // intentional (not a broken/missing price). See CompareRow empty state.
+    pillEmpty: { backgroundColor: 'transparent', borderColor: t.line, borderStyle: 'dashed' },
+    pillLabelFaint: { fontSize: 10, color: t.inkFaint },
+    pillDash: { fontFamily: mono, fontWeight: '600', fontSize: 14, color: t.inkFaint },
+
+    // Stacked compare row — used for brand-drilldown rows (dairy/pantry) where the
+    // title is a long product name and there are 3 stores, so pills can't sit
+    // beside it. Title gets a full-width line; pills spread evenly below.
+    cutRowStacked: {
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.line,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+      marginBottom: 8,
+      gap: 8,
+    },
+    cutStackedHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    chevBadge: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.brandSoft,
+      borderWidth: 1,
+      borderColor: t.brand,
+    },
+    chevGlyph: { color: t.brand, fontSize: 18, fontFamily: sans.bold, marginTop: -2 },
+    pillRowWide: { flexDirection: 'row', gap: 7 },
 
     /* deals list */
     dealRow: {
