@@ -816,6 +816,7 @@ export function AccountScreen() {
   const { name } = useProfile();
   const basket = useBasket();
   const { user, configured } = useAuth();
+  const insets = useSafeAreaInsets();
   const [showEditor, setShowEditor] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showRegAdd, setShowRegAdd] = useState(false);
@@ -867,7 +868,7 @@ export function AccountScreen() {
   return (
     <View style={s.root}>
       <FeedHeader />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 44 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
         {/* Personal header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8 }}>
           <View
