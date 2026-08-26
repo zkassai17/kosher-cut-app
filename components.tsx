@@ -356,6 +356,7 @@ export function CompareRow({
   soloClean,
   pkgFlags,
   chevron,
+  stack,
 }: {
   item: string;
   unit: Unit;
@@ -369,6 +370,7 @@ export function CompareRow({
   soloClean?: boolean; // single-store row shown under an "only at one store" header — drop the redundant caption
   pkgFlags?: boolean[]; // parallel to storeIds: true = a package price (not per-lb), shown for reference only
   chevron?: boolean; // show a › affordance (row opens a detail page)
+  stack?: boolean; // use the stacked card layout (title on top, prices full-width below) even without a chevron — keeps every compare row uniform
 }) {
   const { s, t } = useUI();
   const basket = useBasket();
@@ -491,17 +493,21 @@ export function CompareRow({
       );
     });
 
-  // Stacked layout for brand-drilldown rows (dairy/pantry): the title is a long
-  // product name and there are up to 3 stores, so pills can't fit beside it.
-  // Title (+ chevron) gets a full-width line; pills spread evenly below.
-  if (chevron) {
+  // Stacked card layout: title on its own full-width line, prices spread evenly
+  // below. Used for every compare row (so they're all uniform), and required for
+  // brand rows where the title is a long product name + 3 stores. The › badge
+  // only shows on rows that actually open a brand page.
+  if (stack || chevron) {
     return (
       <View style={s.cutRowStacked}>
         <Pressable style={s.cutStackedHead} onPress={rowPress} onLongPress={reportPrice} hitSlop={6}>
+          {checkbox}
           <Text style={[s.cutName, { flex: 1 }]}>{item}</Text>
-          <View style={s.chevBadge}>
-            <Text style={s.chevGlyph}>›</Text>
-          </View>
+          {chevron ? (
+            <View style={s.chevBadge}>
+              <Text style={s.chevGlyph}>›</Text>
+            </View>
+          ) : null}
         </Pressable>
         {captionNode}
         <View style={s.pillRowWide}>{buildPills(true)}</View>

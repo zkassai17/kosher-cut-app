@@ -202,6 +202,7 @@ export function PricesScreen() {
                       pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
                       onPress={openDetail}
                       chevron={hasBrands}
+                      stack
                     />
                   );
                 })}
@@ -221,6 +222,7 @@ export function PricesScreen() {
                           prices={[r.prices[i]]}
                           pkgFlags={[isPackagePriced(b.ids[i], b.cat.key)]}
                           soloClean
+                          stack
                         />
                       );
                     })}
