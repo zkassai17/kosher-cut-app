@@ -242,7 +242,10 @@ export function cleanName(s: string): string {
 // correctly but wildly larger than normal groceries — a $240 tray next to a $5
 // item makes comparisons look broken. Hide them from search. (~0.9% of the catalog,
 // no normal grocery matches.)
-const CATERING = /\b(full|half|quarter)\s*trays?\b|\bplatters?\b|\bdeluxe board\b|\b(full|whole)\s+cake\b|\bcatering\b|\bparty (platter|pack|tray)\b/i;
+// Catering / party-tray items — hidden from comparisons and search (a $59 tray
+// isn't a grocery price). Covers named trays/platters, pan-size codes like
+// "9x13"/"12x20", chafing/steam-table gear, and "serves/feeds N".
+const CATERING = /\b(full|half|quarter|1\/2|1\/4)\s*(trays?|pans?)\b|\bplatters?\b|\bdeluxe board\b|\b(full|whole)\s+cake\b|\bcatering\b|\bparty (platter|pack|tray)\b|\b(9\s*x\s*13|12\s*x\s*20|7\s*x\s*11|6\s*x\s*10|10\s*x\s*12)\b|\bchafing\b|\bhotel pan\b|\bsteam\s?table\b|\b(serves|feeds)\s*\d{1,3}\b/i;
 
 // Search the catalog across the given stores. Products with the same normalized
 // name at multiple stores are grouped into one comparable row.
