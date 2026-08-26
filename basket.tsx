@@ -23,6 +23,7 @@ const ACTIVE_KEY = 'kc.activeList.v1';
 const REGULARS_KEY = 'kc.regulars.v1';
 const CHECKED_KEY = 'kc.checked.v1'; // "got it" marks, per list — device-local, not synced
 const OWNER_KEY = 'kc.owner.v1'; // which account the on-device lists belong to (isolation)
+const REMOVED_KEY = 'kc.removedPresets.v1'; // preset lists the user deleted — kept out of the re-seed graft
 
 const itemKey = (cat: string, id: string) => `${cat}:${id}`;
 
@@ -81,6 +82,7 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   const syncedUser = useRef<string | null>(null); // whose cloud pull we've STARTED
   const pulledUser = useRef<string | null>(null); // whose cloud pull has FINISHED (safe to push)
   const ownerRef = useRef<string | null>(null); // account the on-device data belongs to
+  const removedPresets = useRef<Set<string>>(new Set()); // presets the user deleted — don't re-graft them
   const setOwner = (id: string) => {
     ownerRef.current = id;
     AsyncStorage.setItem(OWNER_KEY, id).catch(() => {});
@@ -90,21 +92,25 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const [rawLists, rawActive, rawReg, rawChecked, rawOwner] = await Promise.all([
+        const [rawLists, rawActive, rawReg, rawChecked, rawOwner, rawRemoved] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(ACTIVE_KEY),
           AsyncStorage.getItem(REGULARS_KEY),
           AsyncStorage.getItem(CHECKED_KEY),
           AsyncStorage.getItem(OWNER_KEY),
+          AsyncStorage.getItem(REMOVED_KEY),
         ]);
         if (rawOwner) ownerRef.current = rawOwner;
+        if (rawRemoved) removedPresets.current = new Set(JSON.parse(rawRemoved));
         if (rawChecked) setCheckedByList(JSON.parse(rawChecked));
         if (rawLists) {
           const stored: NamedList[] = JSON.parse(rawLists);
-          // Keep saved lists; graft in any preset added since (so new presets show up).
+          // Keep saved lists; graft in any preset added since (so new presets show up) —
+          // but never re-add a preset the user deliberately deleted.
           const byId = new Map(stored.map((l) => [l.id, l]));
           for (const p of PRESETS) {
-            if (!byId.has(p.id)) byId.set(p.id, { id: p.id, label: p.label, emoji: p.emoji, items: p.items.map((i) => ({ ...i })) });
+            if (!byId.has(p.id) && !removedPresets.current.has(p.id))
+              byId.set(p.id, { id: p.id, label: p.label, emoji: p.emoji, items: p.items.map((i) => ({ ...i })) });
           }
           setLists(Array.from(byId.values()));
         }
@@ -244,10 +250,18 @@ export function BasketProvider({ children }: { children: ReactNode }) {
       renameList: (id, label, emoji) =>
         setLists((prev) => prev.map((l) => (l.id === id ? { ...l, label: label.trim() || l.label, emoji: emoji || l.emoji } : l))),
       deleteList: (id) => {
-        if (PRESETS.some((p) => p.id === id)) return; // presets stay
+        // Any list can be removed now, including presets — if you don't want a
+        // Shabbos or Pesach list, delete it. We remember deleted presets so they
+        // aren't re-added on the next launch. Always keep at least one list.
         setLists((prev) => {
+          if (prev.length <= 1) return prev;
           const next = prev.filter((l) => l.id !== id);
-          if (activeId === id) setActiveId(next[0]?.id ?? PRESETS[0].id);
+          if (next.length === prev.length) return prev; // id not found
+          if (PRESETS.some((p) => p.id === id)) {
+            removedPresets.current.add(id);
+            AsyncStorage.setItem(REMOVED_KEY, JSON.stringify([...removedPresets.current])).catch(() => {});
+          }
+          if (activeId === id) setActiveId(next[0].id);
           return next;
         });
       },
@@ -322,6 +336,8 @@ export function BasketProvider({ children }: { children: ReactNode }) {
         setRegulars((prev) => prev.filter((i) => !(i.cat === cat && i.id === id)));
       },
       wipeAll: () => {
+        removedPresets.current = new Set();
+        AsyncStorage.removeItem(REMOVED_KEY).catch(() => {});
         setLists(seedLists());
         setActiveId(PRESETS[0].id);
         setTempByList({});

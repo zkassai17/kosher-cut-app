@@ -977,7 +977,7 @@ export function AccountScreen() {
             return (
               <SwipeToDeleteRow
                 key={l.id}
-                enabled={!basket.isPreset(l.id)}
+                enabled={basket.lists.length > 1}
                 onDelete={() =>
                   Alert.alert('Delete list', `Delete “${l.label}”? This can't be undone.`, [
                     { text: 'Cancel', style: 'cancel' },
