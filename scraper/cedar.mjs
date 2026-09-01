@@ -67,10 +67,15 @@ async function callLLM(userText) {
 // Robust to ALL-CAPS months and to the day-range dash being dropped by the PDF
 // text extractor (it often comes through as "2328").
 function effectiveDate(text) {
-  const m = text.match(/EFFECTIVE[:\s]*([A-Za-z]+)\.?\s+(\d{2})\s*[-–—]?\s*(\d{2})/i);
-  if (!m) return '';
-  const mon = m[1][0].toUpperCase() + m[1].slice(1, 3).toLowerCase();
-  return `${mon} ${m[2]}–${m[3]}`;
+  const t = (text || '').replace(/[]/g, ' '); // vertical tab / form feed in the PDF
+  const mon = (s) => s[0].toUpperCase() + s.slice(1, 3).toLowerCase();
+  // Cross-month range first: "August 30 - September 4" -> "Aug 30 – Sep 4".
+  let m = t.match(/EFFECTIVE[:\s]*([A-Za-z]{3,})\.?\s+(\d{1,2})\s*[-–—]\s*([A-Za-z]{3,})\.?\s+(\d{1,2})/i);
+  if (m) return `${mon(m[1])} ${m[2]} – ${mon(m[3])} ${m[4]}`;
+  // Same month (dash often dropped by the extractor → "2328"): "August 23-28".
+  m = t.match(/EFFECTIVE[:\s]*([A-Za-z]{3,})\.?\s+(\d{2})\s*[-–—]?\s*(\d{2})/i);
+  if (m) return `${mon(m[1])} ${m[2]}–${m[3]}`;
+  return '';
 }
 
 async function findCircularUrl() {
@@ -84,12 +89,98 @@ async function findCircularUrl() {
   return decodeURIComponent(m[0]);
 }
 
-async function pdfText(url) {
+async function fetchPdf(url) {
   const res = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0' } });
   if (!res.ok) throw new Error(`pdf ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function pdfText(buf) {
   const { default: pdf } = await import('pdf-parse/lib/pdf-parse.js'); // lazy so a missing dep can't crash the scraper
   return (await pdf(buf)).text || '';
+}
+
+// Extract the sale deals straight from the PDF's TEXT COORDINATES — align each
+// item with the price sitting in its column. Deterministic, needs no API key,
+// so it can run unattended. Only the clean grid sections (meat/poultry/beef/
+// fish/dairy/grocery) are read; sushi/deli/prepared columns interleave and are
+// skipped. Returns [{ name, price }] with price as a display string.
+async function highlightsFromLayout(buf) {
+  const { default: pdf } = await import('pdf-parse/lib/pdf-parse.js');
+  const SIZEWORD = /^(oz|lb|lbs|ct|pack|pk|g|gr|gram|grams|kg|ml|l|qt|ea|each|family|super|value|only|assorted|excluding|large|small|medium|pc|count|reduced|fat|of)$/i;
+  const SAFE = /meat|poultry|beef|chicken|fish|dairy|grocery|produce|frozen|provision/i;
+  const BAD = /sushi|deli|appetizing|prepared|takeout|take out|catering|salad bar|hot bar/i;
+  const out = [];
+  await pdf(buf, {
+    pagerender: async (page) => {
+      const tc = await page.getTextContent({ disableCombineTextItems: false });
+      const items = tc.items
+        .map((i) => ({ s: (i.str || '').replace(/\s+/g, ' ').trim(), x: Math.round(i.transform[4]), y: Math.round(i.transform[5]) }))
+        .filter((i) => i.s);
+      items.sort((a, b) => b.y - a.y || a.x - b.x);
+      const rows = [];
+      let cur = null;
+      for (const it of items) {
+        if (!cur || Math.abs(it.y - cur.y) > 5) rows.push((cur = { y: it.y, cells: [] }));
+        cur.cells.push(it);
+      }
+      const rowSection = [];
+      let sec = '';
+      for (let i = 0; i < rows.length; i++) {
+        const txt = rows[i].cells.map((c) => c.s).join(' ');
+        if (/department|section|by the case/i.test(txt) || /^(sushi|dairy|frozen|grocery|household|produce|fish|appetizing|bakery|meat|poultry)$/i.test(txt.trim())) sec = txt;
+        rowSection[i] = sec;
+      }
+      for (let r = 0; r < rows.length; r++) {
+        const section = rowSection[r] || '';
+        if (BAD.test(section) || (section && !SAFE.test(section))) continue;
+        const row = rows[r];
+        const dollars = row.cells.filter((c) => c.s === '$' || /^\$\d/.test(c.s));
+        if (dollars.length < 2) continue;
+        const centsRow = rows[r - 1];
+        if (!centsRow) continue;
+        for (const d of dollars) {
+          const X = d.x;
+          let dollarInt = null;
+          const inline = d.s.match(/^\$(\d+)/);
+          if (inline) dollarInt = inline[1];
+          else {
+            const near = row.cells.filter((c) => c.x >= X && c.x <= X + 40 && /^\d+$/.test(c.s)).sort((a, b) => a.x - b.x)[0];
+            if (near) dollarInt = near.s;
+          }
+          if (dollarInt == null) continue;
+          const unit = row.cells.find((c) => c.x >= X && c.x <= X + 90 && /^(EA|LB)$/i.test(c.s));
+          const cents = centsRow.cells
+            .filter((c) => Math.abs(c.x - X) <= 60 && /^\d{2}$/.test(c.s))
+            .sort((a, b) => Math.abs(a.x - X) - Math.abs(b.x - X))[0];
+          const price = parseFloat(`${dollarInt}.${cents ? cents.s : '00'}`);
+          if (!(price > 0.1 && price < 200)) continue;
+          const band = [X - 12, X + 120];
+          const nameWords = [];
+          for (let rr = r - 2; rr >= 0 && rr >= r - 10; rr--) {
+            const cells = rows[rr].cells.filter((c) => c.x >= band[0] && c.x <= band[1]);
+            if (!cells.length) continue;
+            const text = cells.map((c) => c.s).join(' ').trim();
+            if (/\$|\bEA\b|\bLB\b|^\d/.test(text)) break;
+            if (/department|section|sales effective|unless otherwise|by the case|^sushi|^grocery|^dairy|^frozen|^fish|^produce|^appetizing|^bakery|omelette/i.test(text)) break;
+            nameWords.unshift(text);
+          }
+          let name = nameWords.join(' ').replace(/\s+/g, ' ').trim();
+          name = name.split(' ').filter((w) => !/^\d+(\.\d+)?$/.test(w) && !SIZEWORD.test(w)).join(' ');
+          const words = name.split(' ').filter(Boolean);
+          if (name.length < 4 || words.length < 2 || words.length > 7) continue;
+          if (/department|section|effective|omelette|unless/i.test(name)) continue;
+          if (words.some((w, i) => i > 0 && w.toLowerCase() === words[i - 1].toLowerCase())) continue;
+          const lb = !!(unit && /lb/i.test(unit.s));
+          out.push({ name, price: `$${price.toFixed(2)}${lb ? '/lb' : ''}` });
+        }
+      }
+      return '';
+    },
+  });
+  // dedupe by name, keep first, cap at 10
+  const seen = new Set();
+  return out.filter((d) => (seen.has(d.name.toLowerCase()) ? false : (seen.add(d.name.toLowerCase()), true))).slice(0, 10);
 }
 
 // Returns the current { effective, url, pdfUrl, highlights } for Cedar, or
@@ -103,28 +194,39 @@ export async function cedarWeeklyAd(fallback = null) {
   }
   try {
     const pdfUrl = await findCircularUrl();
-    const text = await pdfText(pdfUrl);
+    const buf = await fetchPdf(pdfUrl);
+    const text = await pdfText(buf);
     // Prefer the freshly-parsed date; if extraction drops it but the circular is
     // unchanged, keep the cached date; then the caller's fallback.
     let effective = effectiveDate(text);
     if (!effective && cache.pdfUrl === pdfUrl && cache.effective) effective = cache.effective;
     effective = effective || (fallback && fallback.effective) || '';
 
-    // Highlights: reuse cache unless the circular changed; skip cleanly with no key.
-    let highlights = cache.pdfUrl === pdfUrl && Array.isArray(cache.highlights) ? cache.highlights : null;
+    // Highlights: reuse cache when the circular is unchanged; else read them
+    // straight from the PDF layout — deterministic, no API key. The LLM is only a
+    // last resort if the layout parse comes up empty (and a key is configured).
+    let highlights = cache.pdfUrl === pdfUrl && Array.isArray(cache.highlights) && cache.highlights.length ? cache.highlights : null;
     if (highlights == null) {
       try {
-        const raw = await callLLM(text.slice(0, 9000));
-        const a = raw.indexOf('[');
-        const b = raw.lastIndexOf(']');
-        const parsed = a >= 0 && b >= 0 ? JSON.parse(raw.slice(a, b + 1)) : [];
-        highlights = parsed
-          .filter((x) => x && x.name && x.price)
-          .slice(0, 10)
-          .map((x) => ({ name: String(x.name).trim(), price: String(x.price).trim() }));
+        highlights = await highlightsFromLayout(buf);
       } catch (e) {
-        console.error('  cedar highlights skipped:', String(e).slice(0, 120));
+        console.error('  cedar layout parse failed:', String(e).slice(0, 120));
         highlights = [];
+      }
+      if (!highlights.length) {
+        try {
+          const raw = await callLLM(text.slice(0, 9000));
+          const a = raw.indexOf('[');
+          const b = raw.lastIndexOf(']');
+          const parsed = a >= 0 && b >= 0 ? JSON.parse(raw.slice(a, b + 1)) : [];
+          highlights = parsed
+            .filter((x) => x && x.name && x.price)
+            .slice(0, 10)
+            .map((x) => ({ name: String(x.name).trim(), price: String(x.price).trim() }));
+        } catch (e) {
+          console.error('  cedar highlights skipped:', String(e).slice(0, 120));
+          highlights = [];
+        }
       }
     }
 
