@@ -893,6 +893,50 @@ export function BrandMark({ size = 21 }: { size?: number }) {
   );
 }
 
+/* Freshness badge — turns the feed's updatedAt into a trust signal. Green "✓
+   Updated today" when the daily scrape is current; a muted date otherwise. */
+export function FreshnessBadge({ updatedAt }: { updatedAt: string }) {
+  const { t } = useUI();
+  const d = new Date(updatedAt);
+  let label = `Updated ${updatedAt}`;
+  let fresh = false;
+  if (!isNaN(d.getTime())) {
+    const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diff = Math.round((startOf(new Date()) - startOf(d)) / 86400000);
+    if (diff <= 0) {
+      label = 'Updated today';
+      fresh = true;
+    } else if (diff === 1) {
+      label = 'Updated yesterday';
+      fresh = true;
+    } else if (diff <= 3) {
+      label = `Updated ${diff} days ago`;
+      fresh = true;
+    }
+  }
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, marginTop: 6, marginBottom: 2 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 5,
+          backgroundColor: fresh ? t.brandSoft : t.surface2,
+          borderWidth: 1,
+          borderColor: fresh ? t.brand : t.line,
+          borderRadius: 999,
+          paddingHorizontal: 9,
+          paddingVertical: 3,
+        }}
+      >
+        <Ionicons name={fresh ? 'checkmark-circle' : 'time-outline'} size={12} color={fresh ? t.brand : t.inkSoft} />
+        <Text style={{ color: fresh ? t.brand : t.inkSoft, fontSize: 11.5, fontFamily: sans.bold }}>{label}</Text>
+      </View>
+      <Text style={{ color: t.inkFaint, fontSize: 11.5, fontFamily: sans.med }}>always confirm in-store</Text>
+    </View>
+  );
+}
+
 export function FeedHeader() {
   const { s, t } = useUI();
   const { origin } = useLocation();

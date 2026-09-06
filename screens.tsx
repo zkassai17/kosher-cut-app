@@ -16,6 +16,7 @@ import {
   CompareRow,
   DealRow,
   FeedHeader,
+  FreshnessBadge,
   ListOptionsSheet,
   ListPicker,
   PillTabs,
@@ -114,7 +115,7 @@ export function PricesScreen() {
         <CoachTarget tab="prices" id="search">
           <SearchBar value={q} onChange={setQ} />
         </CoachTarget>
-        <Text style={[s.listHint, { marginBottom: 2 }]}>Prices updated {updatedAt} · always confirm in-store</Text>
+        <FreshnessBadge updatedAt={updatedAt} />
 
         {!query ? (
           <CoachTarget tab="prices" id="cats" style={{ marginTop: 4 }}>
