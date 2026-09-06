@@ -51,6 +51,17 @@ export function curatedPriceOf(storeId: string, cat: string, item: string): numb
   return typeof v === 'number' ? v : undefined;
 }
 
+// Matched package size per curated item ("12 oz"), parallel to CURATED — powers
+// the size / per-unit label. Only present when parseable from the product name.
+let CURATED_SIZES: Record<string, Record<string, Record<string, string>>> = {};
+export function setCuratedSizes(data: Record<string, Record<string, Record<string, string>>> | undefined | null): void {
+  CURATED_SIZES = data && typeof data === 'object' ? data : {};
+}
+export function curatedSizeFor(storeId: string, cat: string, item: string): string | null {
+  const v = CURATED_SIZES[storeId]?.[cat]?.[item];
+  return typeof v === 'string' ? v : null;
+}
+
 /* ---------- Brand-level comparison (Prices drill-down + brand deals) ---------- */
 // Per-area, per-item matched brand rows computed daily by scraper/brands.mjs.
 

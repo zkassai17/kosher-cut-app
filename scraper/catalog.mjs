@@ -19,7 +19,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalize } from './canonicalize.mjs';
 import { cedarWeeklyAd } from './cedar.mjs';
-import { computeCurated } from './curated.mjs';
+import { computeCurated, computeCuratedSizes } from './curated.mjs';
 import { computeBrands } from './brands.mjs';
 
 // Which stores each area compares — mirrors AREAS/KSTORES in stores.ts.
@@ -343,10 +343,11 @@ async function run() {
   const stamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const feedPath = join(__dirname, '..', 'data.json');
   const curated = computeCurated(out); // verified category prices → keeps the tabs fresh daily
+  const curatedSizes = computeCuratedSizes(out); // matched package sizes → per-unit / size labels
   const brands = computeBrands(out, AREA_STORES); // per-area brand comparison for the drill-down
-  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, curated, brands, ...(weeklyAds ? { weeklyAds } : {}) }));
+  writeFileSync(feedPath, JSON.stringify({ updatedAt: stamp, catalog: out, curated, curatedSizes, brands, ...(weeklyAds ? { weeklyAds } : {}) }));
   // Compact overlay bundled into the app as the offline floor (no catalog → ~50KB).
-  writeFileSync(join(__dirname, '..', 'feed-overlay.json'), JSON.stringify({ updatedAt: stamp, curated, brands }));
+  writeFileSync(join(__dirname, '..', 'feed-overlay.json'), JSON.stringify({ updatedAt: stamp, curated, curatedSizes, brands }));
 
   // Also refresh the bundled snapshot the app imports (offline / first-render
   // fallback) so it carries the same products + AI keys as the feed.

@@ -41,7 +41,7 @@ import {
 } from './data';
 import { useData } from './datactx';
 import { decodeList, encodeList, parseTextList, shareText } from './share';
-import { BrandItem, brandFromPrice, brandsFor, cleanName, hasCatalog, searchCatalog } from './catalog';
+import { BrandItem, brandFromPrice, brandsFor, cleanName, curatedSizeFor, hasCatalog, searchCatalog } from './catalog';
 import { areaStoreIds, KSTORES, storesNear } from './stores';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { CoachTarget, useTabCoach } from './coachmarks';
@@ -200,6 +200,7 @@ export function PricesScreen() {
                       unit={r.unit}
                       storeIds={b.ids}
                       prices={prices}
+                      sizes={hasBrands ? undefined : b.ids.map((sid) => curatedSizeFor(sid, b.cat.key, r.id))}
                       pkgFlags={b.ids.map((sid) => isPackagePriced(sid, b.cat.key))}
                       onPress={openDetail}
                       chevron={hasBrands}
@@ -221,6 +222,7 @@ export function PricesScreen() {
                           unit={r.unit}
                           storeIds={[b.ids[i]]}
                           prices={[r.prices[i]]}
+                          sizes={[curatedSizeFor(b.ids[i], b.cat.key, r.id)]}
                           pkgFlags={[isPackagePriced(b.ids[i], b.cat.key)]}
                           soloClean
                           stack

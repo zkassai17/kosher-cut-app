@@ -125,6 +125,7 @@ function PricePill({
   unitTag,
   hideLabel,
   fill,
+  sub,
 }: {
   label: string;
   price: number | null;
@@ -132,6 +133,7 @@ function PricePill({
   unitTag?: string; // e.g. "/lb" — shown under the price to disambiguate units in a mixed row
   hideLabel?: boolean; // single-store rows name the store in the caption, so skip the pill label
   fill?: boolean; // stretch to fill (stacked rows) instead of the fixed 72px width
+  sub?: string; // per-unit / size label, e.g. "$0.33/oz" or "12 ct"
 }) {
   const { s } = useUI();
   const fillStyle = fill ? { width: undefined as undefined, flex: 1 } : null;
@@ -161,6 +163,7 @@ function PricePill({
       {state === 'tie' && <Text style={s.pillFlagMuted}>TIE</Text>}
       {state === 'pkg' && <Text style={s.pillFlagMuted}>pkg</Text>}
       {!flagged && unitTag ? <Text style={s.pillFlagMuted}>{unitTag}</Text> : null}
+      {sub ? <Text style={s.pillSub}>{sub}</Text> : null}
     </View>
   );
 }
@@ -343,11 +346,27 @@ export function BrandDetailModal({
   );
 }
 
+// Per-unit ($/oz) when the package size is a weight, else the raw size ("12 ct").
+// Only for 'ea' (packaged) items — 'lb' categories are already normalized per lb.
+function sizeSubLabel(price: number | null, size: string | null | undefined, catUnit: Unit): string | null {
+  if (!size || catUnit === 'lb') return null;
+  const m = size.match(/^([\d.]+)\s*(oz|lb|ct|pk|gal|qt|g|ml|l)$/i);
+  if (!m) return null;
+  const qty = parseFloat(m[1]);
+  const u = m[2].toLowerCase();
+  if (price != null && qty > 0 && (u === 'oz' || u === 'lb')) {
+    const oz = u === 'lb' ? qty * 16 : qty;
+    if (oz >= 1) return `$${(price / oz).toFixed(2)}/oz`;
+  }
+  return size;
+}
+
 export function CompareRow({
   item,
   unit,
   storeIds,
   prices,
+  sizes,
   cat,
   id,
   checked,
@@ -362,6 +381,7 @@ export function CompareRow({
   unit: Unit;
   storeIds: string[];
   prices: (number | null)[];
+  sizes?: (string | null)[]; // parallel to storeIds — matched package size, for the per-unit/size line
   cat?: string;
   id?: string;
   checked?: boolean; // override the ✓ state (e.g. "this trip" picker)
@@ -478,6 +498,9 @@ export function CompareRow({
         // When a package store is in the row, label the per-lb pills "/lb" so the
         // two aren't confused (e.g. 661 "/lb" next to KMP "pkg").
         const unitTag = hasPkg && !pkgFlags?.[i] ? unitSuffix(unit) : undefined;
+        // Per-unit / size line (e.g. "$0.33/oz" or "12 ct"), only where we have a
+        // real matched size — never faked.
+        const sub = sizes ? sizeSubLabel(p, sizes[i], unit) ?? undefined : undefined;
         // On single-store rows the caption already names the store ("Only at Seasons"),
         // so drop the pill's store label to avoid saying it twice.
         return (
@@ -489,6 +512,7 @@ export function CompareRow({
             unitTag={unitTag}
             hideLabel={anyCount <= 1}
             fill={fill}
+            sub={sub}
           />
       );
     });

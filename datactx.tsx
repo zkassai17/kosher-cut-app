@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
-import { setBrands, setCatalog, setCurated } from './catalog';
+import { setBrands, setCatalog, setCurated, setCuratedSizes } from './catalog';
 import { PRICES_UPDATED } from './prices';
 import { fetchRemoteData, loadCachedData } from './remote';
 import { setWeeklyAds } from './weeklyAds';
@@ -24,12 +24,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let alive = true;
-    const apply = (data: { updatedAt?: string; catalog?: any; weeklyAds?: any; curated?: any; brands?: any } | null) => {
+    const apply = (data: { updatedAt?: string; catalog?: any; weeklyAds?: any; curated?: any; curatedSizes?: any; brands?: any } | null) => {
       if (!alive || !data) return;
       if (data.catalog) setCatalog(data.catalog);
       // Only override the overlay fields when the incoming feed actually carries
       // them — so an older remote feed (no brands yet) can't wipe the bundled floor.
       if (data.curated) setCurated(data.curated);
+      if (data.curatedSizes) setCuratedSizes(data.curatedSizes);
       if (data.brands) setBrands(data.brands);
       setWeeklyAds(data.weeklyAds);
       if (data.updatedAt) setUpdatedAt(data.updatedAt);

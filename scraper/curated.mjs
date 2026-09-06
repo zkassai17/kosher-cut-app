@@ -125,3 +125,35 @@ export function computeCurated(catalog) {
   }
   return out;
 }
+
+// Package size of each curated item's matched product ("12 oz"), when it's
+// parseable from the product name — parallel to computeCurated so the app can
+// show sizes + a per-unit price without touching the price structure. Uses the
+// same bestMatch, so the size always belongs to the price shown.
+const SIZE_RX = /(\d+(?:\.\d+)?)\s*(oz|lb|lbs|gal|qt|ct|pk|pack|g|ml|l)\b/i;
+function sizeOf(name) {
+  const m = (name || '').match(SIZE_RX);
+  if (!m) return null;
+  let unit = m[2].toLowerCase();
+  if (unit === 'lbs') unit = 'lb';
+  if (unit === 'pack') unit = 'pk';
+  return `${m[1]} ${unit}`;
+}
+export function computeCuratedSizes(catalog) {
+  const out = {};
+  for (const [store, products] of Object.entries(catalog || {})) {
+    if (!Array.isArray(products) || !products.length) continue;
+    const store_out = {};
+    for (const [key, spec] of Object.entries(SPECS)) {
+      const [cat, item] = key.split('|');
+      const m = bestMatch(products, spec);
+      const sz = m ? sizeOf(m.n) : null;
+      if (sz) {
+        (store_out[cat] ||= {});
+        store_out[cat][item] = sz;
+      }
+    }
+    out[store] = store_out;
+  }
+  return out;
+}

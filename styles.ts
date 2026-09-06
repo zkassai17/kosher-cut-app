@@ -190,6 +190,7 @@ export function makeStyles(t: Theme) {
     pillPriceLose: { fontFamily: mono, fontWeight: '600', fontSize: 14, color: t.inkSoft },
     pillFlag: { fontFamily: mono, fontSize: 8.5, letterSpacing: 0.5, color: t.brand, fontWeight: '800' },
     pillFlagMuted: { fontFamily: mono, fontSize: 8.5, letterSpacing: 0.5, color: t.inkFaint, fontWeight: '700' },
+    pillSub: { fontFamily: mono, fontSize: 9.5, color: t.inkSoft, fontWeight: '700', marginTop: 1 }, // per-unit / size line
     // "This store doesn't list it" — a dashed, receding cell so it reads as
     // intentional (not a broken/missing price). See CompareRow empty state.
     pillEmpty: { backgroundColor: 'transparent', borderColor: t.line, borderStyle: 'dashed' },
