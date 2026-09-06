@@ -67,15 +67,20 @@ async function callLLM(userText) {
 // Robust to ALL-CAPS months and to the day-range dash being dropped by the PDF
 // text extractor (it often comes through as "2328").
 function effectiveDate(text) {
-  const t = (text || '').replace(/[]/g, ' '); // vertical tab / form feed in the PDF
+  // Strip control chars (the PDF sticks \\x0b/\\x0e between "EFFECTIVE" and the
+  // date) and collapse whitespace so the patterns below match reliably.
+  const t = (text || "").replace(/[\u0000-\u001f]/g, " ").replace(/\s+/g, " ");
   const mon = (s) => s[0].toUpperCase() + s.slice(1, 3).toLowerCase();
-  // Cross-month range first: "August 30 - September 4" -> "Aug 30 – Sep 4".
-  let m = t.match(/EFFECTIVE[:\s]*([A-Za-z]{3,})\.?\s+(\d{1,2})\s*[-–—]\s*([A-Za-z]{3,})\.?\s+(\d{1,2})/i);
+  // Cross-month range: "August 30 - September 4" -> "Aug 30 – Sep 4".
+  let m = t.match(/EFFECTIVE\W*([A-Za-z]{3,})\.?\s+(\d{1,2})\s*[-–—]\s*([A-Za-z]{3,})\.?\s+(\d{1,2})/i);
   if (m) return `${mon(m[1])} ${m[2]} – ${mon(m[3])} ${m[4]}`;
-  // Same month (dash often dropped by the extractor → "2328"): "August 23-28".
-  m = t.match(/EFFECTIVE[:\s]*([A-Za-z]{3,})\.?\s+(\d{2})\s*[-–—]?\s*(\d{2})/i);
+  // Same month with a dash: "September 6-11", "August 23-28" (1- or 2-digit days).
+  m = t.match(/EFFECTIVE\W*([A-Za-z]{3,})\.?\s+(\d{1,2})\s*[-–—]\s*(\d{1,2})/i);
   if (m) return `${mon(m[1])} ${m[2]}–${m[3]}`;
-  return '';
+  // Same month, dash dropped by the extractor: "AUGUST 2328" -> two 2-digit days.
+  m = t.match(/EFFECTIVE\W*([A-Za-z]{3,})\.?\s+(\d{2})(\d{2})\b/i);
+  if (m) return `${mon(m[1])} ${m[2]}–${m[3]}`;
+  return "";
 }
 
 async function findCircularUrl() {

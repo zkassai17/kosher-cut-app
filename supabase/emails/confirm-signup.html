@@ -1,0 +1,73 @@
+<!-- koshercart — Supabase "Confirm signup" email template.
+     Paste the contents of this file into Supabase → Authentication → Emails →
+     "Confirm signup" → Message body (Source). Uses {{ .ConfirmationURL }}. -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0;padding:0;background-color:#F3F1EA;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background-color:#ffffff;border-radius:16px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+        <!-- Header / wordmark -->
+        <tr>
+          <td align="center" style="background-color:#ffffff;padding:30px 24px 22px 24px;">
+            <img src="https://zkassai17.github.io/kosher-cut-app/koshercart-wordmark.png"
+                 alt="koshercart" width="200"
+                 style="display:block;width:200px;max-width:70%;height:auto;border:0;outline:none;text-decoration:none;" />
+          </td>
+        </tr>
+
+        <!-- Green accent divider -->
+        <tr>
+          <td style="padding:0;">
+            <div style="height:4px;background-color:#1E5140;line-height:4px;font-size:4px;">&nbsp;</div>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            <h1 style="margin:0 0 12px 0;font-size:20px;font-weight:700;color:#1a1a1a;">Confirm your email</h1>
+            <p style="margin:0 0 20px 0;font-size:15px;line-height:22px;color:#444444;">
+              Thanks for signing up for koshercart &mdash; the easiest way to compare kosher grocery prices across your local stores. Tap the button below to confirm your email and start saving.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Button -->
+        <tr>
+          <td align="center" style="padding:4px 32px 8px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" style="border-radius:12px;background-color:#1E5140;">
+                  <a href="{{ .ConfirmationURL }}" target="_blank"
+                     style="display:inline-block;padding:14px 32px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px;">
+                    Confirm my email
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Fallback link -->
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <p style="margin:0;font-size:13px;line-height:20px;color:#888888;">
+              Or paste this link into your browser:<br>
+              <a href="{{ .ConfirmationURL }}" style="color:#1E5140;word-break:break-all;">{{ .ConfirmationURL }}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:24px 32px 32px 32px;border-top:1px solid #eeeeee;">
+            <p style="margin:16px 0 0 0;font-size:12px;line-height:18px;color:#aaaaaa;">
+              If you didn&rsquo;t create a koshercart account, you can safely ignore this email.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
